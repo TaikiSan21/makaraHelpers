@@ -1,5 +1,5 @@
 # Generic Makara Functions ----
-# Packages: dplyr, tidyr, lubridate, makaraValidatr
+# Packages: dplyr, tidyr, lubridate
 
 ## Constant values ----
 # List of mandatory fields for various tables
@@ -278,9 +278,11 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
         # Fix time columns
         timeCols <- grep('datetime', names(thisData), value=TRUE)
         for(t in timeCols) {
+            # no problems converting if its already posix
             if(inherits(thisData[[t]], 'POSIXct')) {
                 thisData[[t]] <- psxTo8601(thisData[[t]])
-            }
+                next
+            } 
             alreadyNa <- is.na(thisData[[t]]) | thisData[[t]] == ''
             times <- makeValidTime(thisData[[t]][!alreadyNa])
             goodTime <- !is.na(times)
@@ -307,17 +309,17 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
                 }
                 thisData[[m]][blankChar] <- NA
             }
-            
-            naVals <- is.na(thisData[[m]])
             if(m == 'recording_timezone') {
-                badTz <- !grepl('^UTC[+-]?[0-9:]{0,5}$', thisData[[m]][!naVals])
+                badTz <- !grepl('^UTC[+-]?[0-9:]{0,5}$', thisData[[m]])
                 if(any(badTz)) {
-                    warns <- addWarning(warns, deployment=thisData$deployment_code[!naVals][badTz],
+                    warns <- addWarning(warns, deployment=thisData$deployment_code[badTz],
                                         type='Invalid Timezone',
                                         table=n,
-                                        message=paste0('Timezone ', thisData[[m]][!naVals][badTz], ' is invalid'))
+                                        message=paste0('Timezone ', thisData[[m]][badTz], ' is invalid'))
                 }
             }
+            
+            naVals <- is.na(thisData[[m]])
             # some columns in recordings are only mandatory if not lost
             # and not UNUSABLE
             if(n == 'recordings' &&
@@ -368,7 +370,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
 # Pretty printing helper for warnings created with `addWarning`
 checkWarnings <- function(x) {
     if(!'warnings' %in% names(x) ||
-       nrow(x$warnings) == 0) {
+       length(x$warnings) == 0) {
         return(NULL)
     }
     alls <- x$warnings$deployment == 'All'
@@ -390,6 +392,9 @@ checkWarnings <- function(x) {
 }
 # convert date characters to proper 8601 style output
 makeValidTime <- function(x) {
+    if(inherits(x, 'POSIXct')) {
+        return(psxTo8601(x))
+    }
     out <- rep(NA_character_, length(x))
     for(i in seq_along(x)) {
         val <- x[i]
@@ -496,59 +501,6 @@ checkDbValues <- function(x, db) {
 
 # Checks if deployments, recordings, and recording_intervals
 # are already in makara 
-# checkAlreadyDb <- function(x, db) {
-#     # deployment and recording checko
-#     dep_rec <- left_join(
-#         rename(db$deployments, deployment_id=id),
-#         select(db$recordings, recording_code, deployment_id),
-#         by='deployment_id'
-#     ) %>% 
-#         mutate(JOINCHECK=TRUE)
-#     depCheck <- left_join(
-#         x$deployments,
-#         distinct(select(dep_rec, organization_code, deployment_code, JOINCHECK)),
-#         by=c('organization_code', 'deployment_code')
-#     )
-#     newDep <- is.na(depCheck$JOINCHECK)
-#     x$deployments$new <- newDep
-#     recCheck <- left_join(
-#         x$recordings,
-#         dep_rec,
-#         by=c('organization_code', 'deployment_code', 'recording_code')
-#     )
-#     newRec <- is.na(recCheck$JOINCHECK)
-#     x$recordings$new <- newRec
-#     newDep <- sum(x$deployments$new)
-#     newRec <- sum(x$recordings$new)
-#     message(newDep, ' out of ', nrow(x$deployments), ' deployments are new (not yet in Makara)')
-#     message(newRec , ' out of ', nrow(x$recordings), ' recordings are new (not yet in Makara)')
-#     if('recording_intervals' %in% names(x)) {
-#         intData <- left_join(
-#             db$recording_intervals, 
-#             select(db$recordings, deployment_id, id, recording_code), 
-#             by=c('recording_id'='id')) %>% 
-#             left_join(
-#                 select(db$deployments, deployment_id=id, deployment_code),
-#                 by='deployment_id'
-#             ) %>% 
-#             select(deployment_code, recording_code, 
-#                    recording_interval_start_datetime) %>% 
-#             mutate(JOINCHECK=TRUE,
-#                    recording_interval_start_datetime=format(recording_interval_start_datetime, 
-#                                                             format='%Y-%m-%d %H:%M:%S'))
-#         intCheck <- left_join(
-#             x$recording_intervals,
-#             intData,
-#             by=c('deployment_code', 'recording_code', 'recording_interval_start_datetime'))
-#         newInt <- is.na(intCheck$JOINCHECK)
-#         x$recording_intervals$new <- newInt
-#         newInt <- sum(x$recording_intervals$new)
-#         message(newInt, ' out of ', nrow(x$recording_intervals), 
-#                 ' recording_intervals are new (not yet in Makara)')
-#     }
-#     x
-# }
-# reworked for BQ database
 checkAlreadyDb <- function(x, db) {
     # deployment and recording checko
     dep_rec <- db$recordings %>% 
@@ -631,7 +583,7 @@ writeTemplateOutput <- function(data, folder='outputs') {
 
 # folder containing template .csv files
 # applies column types for enforcing later
-formatBasicTemplates <- function() {
+formatBasicTemplates <- function(folder) {
     # tempFiles <- list.files(folder, pattern='csv$', full.names=TRUE, recursive=TRUE)
     # result <- lapply(tempFiles, function(x) {
     #     # sometimes incomplete final line warning, ignore it
