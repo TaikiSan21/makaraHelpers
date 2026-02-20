@@ -1,6 +1,14 @@
 # Generic Makara Functions ----
 # Packages: dplyr, tidyr, lubridate, makaraValidatr
 
+## Updating code ----
+# uncomment this chunk to force janky single-file update of my common functions
+# updateFunctions <- download.file('https://api.github.com/repos/TaikiSan21/makaraHelpers/contents/R/makara-functions.R',
+#                      destfile = 'functions/makara-functions.R',
+#                      method='libcurl',
+#                      headers=c('Accept'= 'application/vnd.github.v3.raw'),
+#                      extra='-O -L')
+
 ## Functions ----
 # map is list of form old=new
 # renames either values in a vector or names of dataframe
@@ -534,5 +542,79 @@ formatBasicTemplates <- function() {
             result[[n]][[col]] <- as.logical(result[[n]][[col]])
         }
     }
+    result
+}
+
+downloadBqMakara <- function(project='ggn-nmfs-pacm-dev-1', dataset='makara') {
+    ds <- bq_dataset(project, dataset)
+    tb_ref <- bq_dataset_query(ds, query = "select * from view_reference_codes")
+    df_ref <- bq_table_download(tb_ref)
+    
+    tb_org <- bq_dataset_query(ds, query = "select * from view_organization_codes")
+    df_org <- bq_table_download(tb_org)
+    
+    dep_rec_q <- bq_dataset_query(ds, query='select
+                            d.organization_code,
+                            d.deployment_code,
+                            d.deployment_datetime,
+                            d.recovery_datetime,
+                            d.deployment_alias,
+                            r.recording_start_datetime,
+                            r.recording_end_datetime,
+                            r.recording_usable_start_datetime,
+                            r.recording_usable_end_datetime,
+                            r.recording_code
+                            from
+                            deployments d
+                            left join
+                            recordings r
+                            on d.id = r.deployment_id')
+    dep_rec_df <- bq_table_download(dep_rec_q)
+    list(db_ref=df_ref,
+         db_org=df_org,
+         db_dep_rec=dep_rec_df)
+}
+
+# transform into list of db$table_name
+formatBqMakara <- function(db_raw) {
+    result <- split(db_raw$db_org, db_raw$db_org$table)
+    result <- lapply(result, function(x) {
+        code_prefix <- switch(
+            x$table[1],
+            'analyses' = 'analysis_code',
+            paste0(gsub('s$', '', x$table[1]), '_code')
+        )
+        names(x)[3] <- code_prefix
+        keepCol <- which(sapply(x, function(col) !all(is.na(col))))
+        x[keepCol]
+    })
+    result$recording_intervals <- db_raw$db_rec_int
+    refs <- split(db_raw$db_ref, db_raw$db_ref$table)
+    refs <- lapply(refs, function(x) {
+        if(x$table[1] == 'call_types_sound_sources') {
+            split_code <- str_split(x$code, pattern=':', simplify=TRUE)
+            x$soundsource_id <- split_code[ ,2]
+            x$calltype_id <- split_code[, 1]
+            return(x)
+        }
+        code_prefix <- switch(
+            x$table[1],
+            'analyses' = 'analysis_code',
+            paste0(gsub('s$', '', x$table[1]), '_code')
+        )
+        names(x)[3] <- code_prefix
+        keepCol <- which(sapply(x, function(col) !all(is.na(col))))
+        x[keepCol]
+    })
+    for(table in names(refs)) {
+        result[[table]] <- refs[[table]]
+    }
+    result$deployments_recordings <- db_raw$db_dep_rec
+    result$deployments <- left_join(
+        result$deployments,
+        distinct(select(result$deployments_recordings, organization_code, deployment_code, deployment_alias)),
+        by=c('organization_code', 'deployment_code'),
+        relationship='one-to-one'
+    )
     result
 }
