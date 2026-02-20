@@ -1,5 +1,5 @@
 # Generic Makara Functions ----
-# Packages: dplyr, tidyr, lubridate, makaraValidatr
+# Packages: dplyr, tidyr, lubridate, makaraValidatr, bigrquery
 
 ## Updating code ----
 # uncomment this chunk to force janky single-file update of my common functions
