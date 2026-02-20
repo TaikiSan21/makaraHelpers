@@ -592,7 +592,8 @@ formatBqMakara <- function(db_raw) {
     refs <- split(db_raw$db_ref, db_raw$db_ref$table)
     refs <- lapply(refs, function(x) {
         if(x$table[1] == 'call_types_sound_sources') {
-            split_code <- str_split(x$code, pattern=':', simplify=TRUE)
+            # split_code <- str_split(x$code, pattern=':', simplify=TRUE)
+            split_code <- t(matrix(unlist(strsplit(x$code, split=':')), nrow=2))
             x$soundsource_id <- split_code[ ,2]
             x$calltype_id <- split_code[, 1]
             return(x)
