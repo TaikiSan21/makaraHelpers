@@ -349,7 +349,7 @@ makeValidTime <- function(x) {
             orders=c('%Y-%m-%d %H:%M:%S',
                      '%Y/%m/%d %H:%M:%S',
                      '%Y-%m-%dT%H:%M:%SZ',
-                     '%Y/%m/%d %H:%M:%S%z'),
+                     '%Y-%m-%dT%H:%M:%S%z'),
             truncated = 3,
             tz='UTC',
             quiet=TRUE,
