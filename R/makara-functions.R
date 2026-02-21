@@ -166,6 +166,17 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
         thisMand <- mandatory[[n]]$always
         thisNcei <- mandatory[[n]]$ncei
         thisData <- x[[n]]
+        # special case detections no mand locals
+        if(n == 'detections') {
+            if(!'localization_latitude' %in% names(thisData) ||
+               all(is.na(thisData$localization_latitude))) {
+                thisMand <- thisMand[thisMand != 'localization_method_code']
+            }
+            if(!'localization_depth_m' %in% names(thisData) ||
+               all(is.na(thisData$localization_depth_m))) {
+                thisMand <- thisMand[thisMand != 'localization_depth_method_code']
+            }
+        }
         # checking that i didnt goof mandatory names
         missMand <- !thisMand  %in% names(thisTemp)
         if(any(missMand)) {
