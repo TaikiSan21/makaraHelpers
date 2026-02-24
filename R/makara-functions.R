@@ -447,44 +447,47 @@ checkDbValues <- function(x, db) {
 # Checks if deployments, recordings, and recording_intervals
 # are already in makara 
 checkAlreadyDb <- function(x, db) {
-    # deployment and recording checko
-    dep_rec <- db$recordings %>% 
-        mutate(JOINCHECK=TRUE)
-    depCheck <- left_join(
-        x$deployments,
-        distinct(select(dep_rec, organization_code, deployment_code, JOINCHECK)),
-        by=c('organization_code', 'deployment_code')
+    joinRequirements <- list(
+        'deployments' = c('organization_code', 'deployment_code'),
+        'recordings' = c('organization_code', 'deployment_code', 'recording_code'),
+        'recordings_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
+        'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code')
     )
-    newDep <- is.na(depCheck$JOINCHECK)
-    x$deployments$new <- newDep
-    recCheck <- left_join(
-        x$recordings,
-        dep_rec,
-        by=c('organization_code', 'deployment_code', 'recording_code')
-    )
-    newRec <- is.na(recCheck$JOINCHECK)
-    x$recordings$new <- newRec
-    newDep <- sum(x$deployments$new)
-    newRec <- sum(x$recordings$new)
-    message(newDep, ' out of ', nrow(x$deployments), ' deployments are new (not yet in Makara)')
-    message(newRec , ' out of ', nrow(x$recordings), ' recordings are new (not yet in Makara)')
-    if('recording_intervals' %in% names(x)) {
-        intData <- db$recording_intervals %>% 
-            select(deployment_code, recording_code, 
-                   recording_interval_start_datetime) %>% 
-            mutate(JOINCHECK=TRUE,
-                   recording_interval_start_datetime=format(recording_interval_start_datetime, 
-                                                            format='%Y-%m-%d %H:%M:%S'))
-        intCheck <- left_join(
-            x$recording_intervals,
-            intData,
-            by=c('deployment_code', 'recording_code', 'recording_interval_start_datetime'))
-        newInt <- is.na(intCheck$JOINCHECK)
-        x$recording_intervals$new <- newInt
-        newInt <- sum(x$recording_intervals$new)
-        message(newInt, ' out of ', nrow(x$recording_intervals), 
-                ' recording_intervals are new (not yet in Makara)')
+    for(j in names(x)) {
+        if(!j %in% names(db)) {
+            warning('Could not check table ', j, ', was not in DB')
+            next
+        }
+        if(!j %in% names(joinRequirements)) {
+            warning('No requirements listed for table ', j, ', did not check')
+            next
+        }
+        if(j == 'recording_intervals') {
+            db[[j]]$recording_interval_start_datetime <- format(db[[j]]$recording_interval_start_datetime,
+                                                                format='%Y-%m-%d %H:%M:%S')
+        }
+        if(j %in% names(x)) {
+            x[[j]] <- doJoinCheck(x[[j]], db[[j]], by=joinRequirements[[j]], name=j)
+        }
     }
+    
+    x
+}
+
+# check if x is already in y by joining
+doJoinCheck <- function(x, y, by, name) {
+    # x <- select(x, all_of(by))
+    y <- distinct(select(y, all_of(by)))
+    y$JOINCHECK <- TRUE
+    x <- left_join(
+        x,
+        y,
+        by=by
+    )
+    newX <- is.na(x$JOINCHECK)
+    x$JOINCHECK <- NULL
+    x$new <- newX
+    message(sum(newX), ' out of ', nrow(x), ' ', name, ' are new (not yet in Makara)')
     x
 }
 
