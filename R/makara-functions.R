@@ -456,7 +456,7 @@ checkAlreadyDb <- function(x, db) {
     # tables to not check against
     noCheck <- c('detections', 'sensor_values')
     for(j in names(x)) {
-        if(j %in% noCheck)) {
+        if(j %in% noCheck) {
             next
         }
         if(!j %in% names(joinRequirements)) {
