@@ -640,9 +640,23 @@ downloadBqMakara <- function(project='ggn-nmfs-pacm-dev-1', dataset='makara') {
                             recordings r
                             on d.id = r.deployment_id')
     dep_rec_df <- bq_table_download(dep_rec_q)
+    recint_q <- bq_dataset_query(ds, query = "select 
+                             ri.recording_interval_start_datetime,
+                             ri.recording_interval_end_datetime,
+                             r.recording_code,
+                             d.deployment_code
+                             from recording_intervals ri 
+                             left join 
+                             recordings r 
+                             on ri.recording_id = r.id
+                             left join
+                             deployments d
+                             on  r.deployment_id = d.id")
+    recint_df <- bq_table_download(recint_q)
     list(db_ref=df_ref,
          db_org=df_org,
-         db_dep_rec=dep_rec_df)
+         db_dep_rec=dep_rec_df,
+         db_rec_int=recint_df)
 }
 
 # transform into list of db$table_name
@@ -687,5 +701,6 @@ formatBqMakara <- function(db_raw) {
         by=c('organization_code', 'deployment_code'),
         relationship='one-to-one'
     )
+    result$recording_intervals <- db_raw$db_rec_int
     result
 }
