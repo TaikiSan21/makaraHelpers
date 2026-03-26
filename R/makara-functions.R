@@ -480,7 +480,7 @@ checkAlreadyDb <- function(x, db) {
 }
 
 # check if x is already in y by joining
-doJoinCheck <- function(x, y, by, name) {
+doJoinCheck <- function(x, y, by, name, verbose=TRUE) {
     # x <- select(x, all_of(by))
     y <- distinct(select(y, all_of(by)))
     y$JOINCHECK <- TRUE
@@ -492,7 +492,9 @@ doJoinCheck <- function(x, y, by, name) {
     newX <- is.na(x$JOINCHECK)
     x$JOINCHECK <- NULL
     x$new <- newX
-    message(sum(newX), ' out of ', nrow(x), ' ', name, ' are new (not yet in Makara)')
+    if(isTRUE(verbose)) {
+        message(sum(newX), ' out of ', nrow(x), ' ', name, ' are new (not yet in Makara)')
+    }
     x
 }
 
