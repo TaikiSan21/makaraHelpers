@@ -450,7 +450,7 @@ checkAlreadyDb <- function(x, db) {
     joinRequirements <- list(
         'deployments' = c('organization_code', 'deployment_code'),
         'recordings' = c('organization_code', 'deployment_code', 'recording_code'),
-        'recordings_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
+        'recording_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
         'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code')
     )
     # tables to not check against
