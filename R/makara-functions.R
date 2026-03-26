@@ -479,6 +479,54 @@ checkAlreadyDb <- function(x, db) {
     x
 }
 
+checkDetectionData <- function(x) {
+    # only if dets and ana are in
+    if(!all(c('detections', 'analyses') %in% names(x))) {
+        return(x)
+    }
+    # want to check det codes are in ana
+    dets <- distinct(select(x$detections,
+                            deployment_code,
+                            analysis_code,
+                            detection_sound_source_code))
+    ana <- distinct(select(x$analyses,
+                           deployment_code, 
+                           analysis_code,
+                           analysis_sound_source_codes))
+    warns <- vector('list', length=0)
+    anaCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code'), verbose=F)
+    if(any(anaCheck$new)) {
+        warns <- addWarning(warns, 
+                            deployment=anaCheck$deployment_code[anaCheck$new],
+                            type='analysis_code not present in analyses',
+                            table='detections',
+                            message=paste0("analysis code '", anaCheck$analysis_code[anaCheck$new],
+                                           "' does not match analyses table")
+        )
+    }
+    # want to check species in detections are in their analysis
+    ana <- ana  %>% 
+        mutate(detection_sound_source_code = strsplit(analysis_sound_source_codes, ',')) %>% 
+        unnest(detection_sound_source_code)
+    speciesCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code', 'detection_sound_source_code'), verbose=F)
+    if(any(speciesCheck$new)) {
+        warns <- addWarning(warns, 
+                            deployment=speciesCheck$deployment_code[speciesCheck$new],
+                            type='detection_sound_source_code not present in analysis_sound_source_codes',
+                            table='detections',
+                            message=paste0("detection_sound_source_code '",
+                                           speciesCheck$detection_sound_source_code[speciesCheck$new],
+                                           "' is not present in analysis_sound_source_codes")
+        )
+    }
+    if(!'warnings' %in% names(x)) {
+        x$warnings <- warns
+    } else {
+        x$warnings <- bind_rows(x$warnings, warns)
+    }
+    x
+}
+
 # check if x is already in y by joining
 doJoinCheck <- function(x, y, by, name, verbose=TRUE) {
     # x <- select(x, all_of(by))
