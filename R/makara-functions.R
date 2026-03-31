@@ -451,10 +451,11 @@ checkAlreadyDb <- function(x, db) {
         'deployments' = c('organization_code', 'deployment_code'),
         'recordings' = c('organization_code', 'deployment_code', 'recording_code'),
         'recording_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
-        'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code')
+        'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code'),
+        'tracks' = c('organization_code', 'deployment_code', 'track_code')
     )
     # tables to not check against
-    noCheck <- c('detections', 'sensor_values')
+    noCheck <- c('detections', 'sensor_values', 'track_positions')
     for(j in names(x)) {
         if(j %in% noCheck) {
             next
