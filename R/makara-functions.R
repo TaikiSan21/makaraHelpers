@@ -250,6 +250,33 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
             }
             
         }
+        # Check coordinate column ranges
+        latCols <- grep('latitude', names(thisData), value=TRUE)
+        for(l in latCols) {
+            oob <- !is.na(thisData[[l]]) &
+                (thisData[[l]] > 90 | thisData[[l]] < -90)
+            if(any(oob)) {
+                warns <- addWarning(warns, deployment=thisData$deployment_code[oob],
+                                    type='Latitude Out of Bounds',
+                                    table=n,
+                                    message=paste0("Latitude '", thisData[[l]][oob], "' in column '",
+                                                   l, "' is outside -90 to 90 range")
+                )
+            }
+        }
+        longCols <- grep('longitude', names(thisData), value=TRUE)
+        for(l in longCols) {
+            oob <- !is.na(thisData[[l]]) &
+                (thisData[[l]] > 180 | thisData[[l]] < -180)
+            if(any(oob)) {
+                warns <- addWarning(warns, deployment=thisData$deployment_code[oob],
+                                    type='Longitude Out of Bounds',
+                                    table=n,
+                                    message=paste0("Longitude '", thisData[[l]][oob], "' in column '",
+                                                   l, "' is outside -180 to 180 range")
+                )
+            }
+        }
         # check that values in mandatory columns are not NA or ''
         for(m in thisMand[!missMand]) {
             if(is.character(thisTemp[[m]])) {
