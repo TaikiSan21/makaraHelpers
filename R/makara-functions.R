@@ -556,9 +556,12 @@ checkDetectionData <- function(x) {
 }
 
 # check if x is already in y by joining
-doJoinCheck <- function(x, y, by, name, verbose=TRUE) {
+doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE, verbose=TRUE) {
     # x <- select(x, all_of(by))
     y <- distinct(select(y, all_of(by)))
+    if(isTRUE(ix)) {
+        y$JOINIX <- 1:nrow(y)
+    }
     y$JOINCHECK <- TRUE
     x <- left_join(
         x,
@@ -569,7 +572,10 @@ doJoinCheck <- function(x, y, by, name, verbose=TRUE) {
     x$JOINCHECK <- NULL
     x$new <- newX
     if(isTRUE(verbose)) {
-        message(sum(newX), ' out of ', nrow(x), ' ', name, ' are new (not yet in Makara)')
+        if(!is.null(name)) {
+            name <- paste0(' ', name)
+        }
+        message(sum(newX), ' out of ', nrow(x), name, ' are new (not yet in Makara)')
     }
     x
 }
