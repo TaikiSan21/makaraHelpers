@@ -785,6 +785,14 @@ formatBqMakara <- function(db_raw) {
                 relationship='many-to-one'
             )
         }
+        if(t == 'analyses') {
+            fulls[[t]] <- left_join(
+                fulls[[t]],
+                select(fulls$deployments, id, deployment_organization_code=organization_code),
+                by=c('deployment_id'='id'),
+                relationship='many-to-one'
+            )
+        }
         result[[t]] <- fulls[[t]]
     }
     result
