@@ -800,7 +800,7 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
             for(d in which(newNA)) {
                 val <- diffs$old[d]
                 class(val) <- class(this[[diffs$column[d]]])
-                x[diffs$row[d], diffs$column[d]] <- val
+                x[[t]][diffs$row[d], diffs$column[d]] <- val
             }
             diffs <- diffs[!newNA, ]
         }
