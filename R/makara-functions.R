@@ -773,7 +773,7 @@ formatBqMakara <- function(db_raw) {
     result
 }
 
-checkDbReplacements <- function(x, db) {
+checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
     joinRequirements <- list(
         'deployments' = c('organization_code', 'deployment_code'),
         'recordings' = c('organization_code', 'deployment_code', 'recording_code'),
@@ -793,7 +793,7 @@ checkDbReplacements <- function(x, db) {
             db[[t]]$recording_interval_start_datetime <- psxTo8601(db[[t]]$recording_interval_start_datetime)
         }
         this <- doJoinCheck(x[[t]], db[[t]], by=joinRequirements[[t]], ix=TRUE, verbose=FALSE)
-        diffs <- checkTableDiffs(this, db[[t]])
+        diffs <- checkTableDiffs(this, db[[t]], replaceWithNA = replaceWithNA)
         if(nrow(diffs) > 0) {
             warns <- addWarning(warns,
                                 deployment=this$deployment_code[as.numeric(diffs$row)],
@@ -853,7 +853,7 @@ checkRowDiffs <- function(x, y) {
     bind_rows(diffs, .id='column')
 }
 
-checkTableDiffs <- function(x, y) {
+checkTableDiffs <- function(x, y, replaceWithNA=FALSE) {
     commNames <- intersect(names(x), names(y))
     x <- x[c(commNames, 'new','JOINIX')]
     y <- y[commNames]
@@ -876,6 +876,14 @@ checkTableDiffs <- function(x, y) {
             next
         }
         diffs <- checkRowDiffs(x[i,], y[x$JOINIX[i],])
+        newNA <- is.na(diffs$new)
+        if(isFALSE(replaceWithNA) &&
+           any(newNA)) {
+            for(d in which(newNA)) {
+                x[i, diffs$column[d]] <- diffs$old[d]
+            }
+            diffs <- diffs[!newNA, ]
+        }
         result[[i]] <- diffs
     }
     bind_rows(result, .id='row')
