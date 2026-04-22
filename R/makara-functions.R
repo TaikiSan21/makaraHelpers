@@ -657,36 +657,6 @@ downloadBqMakara <- function(project='ggn-nmfs-pacm-dev-1', dataset='makara') {
     tb_org <- bq_dataset_query(ds, query = "select * from view_organization_codes")
     df_org <- bq_table_download(tb_org)
     
-    # dep_rec_q <- bq_dataset_query(ds, query='select
-    #                         d.organization_code,
-    #                         d.deployment_code,
-    #                         d.deployment_datetime,
-    #                         d.recovery_datetime,
-    #                         d.deployment_alias,
-    #                         r.recording_start_datetime,
-    #                         r.recording_end_datetime,
-    #                         r.recording_usable_start_datetime,
-    #                         r.recording_usable_end_datetime,
-    #                         r.recording_code
-    #                         from
-    #                         deployments d
-    #                         left join
-    #                         recordings r
-    #                         on d.id = r.deployment_id')
-    # dep_rec_df <- bq_table_download(dep_rec_q)
-    # recint_q <- bq_dataset_query(ds, query = "select 
-    #                          ri.recording_interval_start_datetime,
-    #                          ri.recording_interval_end_datetime,
-    #                          r.recording_code,
-    #                          d.deployment_code
-    #                          from recording_intervals ri 
-    #                          left join 
-    #                          recordings r 
-    #                          on ri.recording_id = r.id
-    #                          left join
-    #                          deployments d
-    #                          on  r.deployment_id = d.id")
-    # recint_df <- bq_table_download(recint_q)
     full_tables <- c('deployments', 
                      'recordings', 
                      'analyses', 
@@ -711,11 +681,22 @@ downloadBqMakara <- function(project='ggn-nmfs-pacm-dev-1', dataset='makara') {
         d <- bq_table_download(q)
         full_df[[i]] <- d
     }
-    
+    # aggregate and add device_codes
+    query <- "select dd.deployment_id, STRING_AGG(dev.device_code, ',') deployment_device_codes from 
+        deployments_devices dd
+        left join devices dev
+        on dev.id = dd.device_id
+        group by dd.deployment_id
+    "
+    devq <- bq_dataset_query(ds, query)
+    devd <- bq_table_download(devq)
+    full_df$deployments <- left_join(
+        full_df$deployments,
+        devd,
+        by=c('id' = 'deployment_id')
+    )
     list(db_ref=df_ref,
          db_org=df_org,
-         # db_dep_rec=dep_rec_df,
-         # db_rec_int=recint_df,
          full_data=full_df)
 }
 
@@ -732,7 +713,6 @@ formatBqMakara <- function(db_raw) {
         keepCol <- which(sapply(x, function(col) !all(is.na(col))))
         x[keepCol]
     })
-    # result$recording_intervals <- db_raw$db_rec_int
     refs <- split(db_raw$db_ref, db_raw$db_ref$table)
     refs <- lapply(refs, function(x) {
         if(x$table[1] == 'call_types_sound_sources') {
@@ -754,17 +734,9 @@ formatBqMakara <- function(db_raw) {
     for(table in names(refs)) {
         result[[table]] <- refs[[table]]
     }
-    # result$deployments_recordings <- db_raw$db_dep_rec
-    # result$deployments <- left_join(
-    #     result$deployments,
-    #     distinct(select(result$deployments_recordings, organization_code, deployment_code, deployment_alias)),
-    #     by=c('organization_code', 'deployment_code'),
-    #     relationship='one-to-one'
-    # )
-    # result$recording_intervals <- db_raw$db_rec_int
+    
     fulls <- db_raw$full_data
-    # dep_code <- select(fulls$deployments, id, deployment_code)
-    # rec_code <- select(fulls$recordings, id, recording_code)
+    
     fulls$deployments <- left_join(
         fulls$deployments,
         select(fulls$deployments, id, parent_deployment_code=deployment_code),
@@ -772,9 +744,6 @@ formatBqMakara <- function(db_raw) {
         relationship = 'many-to-one'
     )
     for(t in names(fulls)) {
-        # if(t == 'deployments') {
-        #     next
-        # }
         if('deployment_id' %in% names(fulls[[t]])) {
             fulls[[t]] <- left_join(
                 fulls[[t]],
@@ -865,6 +834,13 @@ checkRowDiffs <- function(x, y) {
             }
             valX <- toJSON(valX)
             valY <- toJSON(valY)
+        }
+        if(grepl('_codes$', c)) {
+            valX <- strsplit(gsub(' ', '', valX), ',')[[1]]
+            valY <- strsplit(gsub(' ', '', valY), ',')[[1]]
+            if(setequal(valX, valY)) {
+                valY <- valX
+            }
         }
         if(isTRUE(all.equal(valX, valY))) {
             next
