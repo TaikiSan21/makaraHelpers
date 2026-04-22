@@ -891,6 +891,9 @@ checkTableDiffs <- function(x, y) {
         result[[i]] <- diffs
     }
     result <- bind_rows(result, .id='row')
+    if(is.null(result) || nrow(result) == 0) {
+        return(result)
+    }
     result$row <- as.numeric(result$row)
     result
 }
