@@ -905,6 +905,7 @@ combineDeviceCodes <- function(dep, rec) {
     ) %>% 
         summarise(device_codes=paste0(recording_device_codes, collapse=','),
                   .by=deployment_code)
+    recCodes$device_codes[recCodes$device_codes == 'NA'] <- NA
     dep <- left_join(
         dep,
         recCodes,
