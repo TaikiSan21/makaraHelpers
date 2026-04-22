@@ -899,6 +899,6 @@ combineDeviceCodes <- function(dep, rec) {
         x <- gsub(' ', '', x)
         x <- unique(strsplit(x, ',')[[1]])
         paste0(x, collapse=',')
-    })
+    }, USE.NAMES = FALSE)
     dep
 }
