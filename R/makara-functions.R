@@ -894,9 +894,11 @@ combineDeviceCodes <- function(dep, rec) {
     dep <- unite(dep, 'deployment_device_codes',
                  c('deployment_device_codes', 'device_codes'),
                  sep=',',
-                 na.rm=TRUE) %>% 
-        mutate(deployment_device_codes=paste0(
-            unique(strsplit(gsub(' ', '', deployment_device_codes), ',')[[1]]),
-            collapse=','))
+                 na.rm=TRUE)
+    dep$deployment_device_codes <- sapply(dep$deployment_device_codes, function(x) {
+        x <- gsub(' ', '', x)
+        x <- unique(strsplit(x, ',')[[1]])
+        paste0(x, collapse=',')
+    })
     dep
 }
