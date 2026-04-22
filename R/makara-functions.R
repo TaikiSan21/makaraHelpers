@@ -793,10 +793,20 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
             db[[t]]$recording_interval_start_datetime <- psxTo8601(db[[t]]$recording_interval_start_datetime)
         }
         this <- doJoinCheck(x[[t]], db[[t]], by=joinRequirements[[t]], ix=TRUE, verbose=FALSE)
-        diffs <- checkTableDiffs(this, db[[t]], replaceWithNA = replaceWithNA)
+        diffs <- checkTableDiffs(this, db[[t]])
+        newNA <- is.na(diffs$new)
+        if(isFALSE(replaceWithNA) &&
+           any(newNA)) {
+            for(d in which(newNA)) {
+                val <- diffs$old[d]
+                class(val) <- class(this[[diffs$column[d]]])
+                x[diffs$row[d], diffs$column[d]] <- val
+            }
+            diffs <- diffs[!newNA, ]
+        }
         if(nrow(diffs) > 0) {
             warns <- addWarning(warns,
-                                deployment=this$deployment_code[as.numeric(diffs$row)],
+                                deployment=this$deployment_code[diffs$row],
                                 table=t,
                                 type='Update Database Value',
                                 message=paste0('Updating value in column "', 
@@ -853,7 +863,7 @@ checkRowDiffs <- function(x, y) {
     bind_rows(diffs, .id='column')
 }
 
-checkTableDiffs <- function(x, y, replaceWithNA=FALSE) {
+checkTableDiffs <- function(x, y) {
     commNames <- intersect(names(x), names(y))
     x <- x[c(commNames, 'new','JOINIX')]
     y <- y[commNames]
@@ -876,17 +886,11 @@ checkTableDiffs <- function(x, y, replaceWithNA=FALSE) {
             next
         }
         diffs <- checkRowDiffs(x[i,], y[x$JOINIX[i],])
-        newNA <- is.na(diffs$new)
-        if(isFALSE(replaceWithNA) &&
-           any(newNA)) {
-            for(d in which(newNA)) {
-                x[i, diffs$column[d]] <- diffs$old[d]
-            }
-            diffs <- diffs[!newNA, ]
-        }
         result[[i]] <- diffs
     }
-    bind_rows(result, .id='row')
+    result <- bind_rows(result, .id='row')
+    result$row <- as.numeric(result$row)
+    result
 }
 
 combineDeviceCodes <- function(dep, rec) {
