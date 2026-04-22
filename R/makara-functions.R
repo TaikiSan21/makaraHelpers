@@ -782,6 +782,9 @@ checkDbReplacements <- function(x, db) {
         'tracks' = c('organization_code', 'deployment_code', 'track_code')
     )
     warns <- vector('list', length=0)
+    if(all(c('deployments', 'recordings') %in% names(x))) {
+        x$deployments <- combineDeviceCodes(x$deployments, x$recordings)
+    }
     for(t in names(joinRequirements)) {
         if(!t %in% names(x)) {
             next
