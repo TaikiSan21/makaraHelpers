@@ -803,3 +803,98 @@ formatBqMakara <- function(db_raw) {
     }
     result
 }
+
+checkDbReplacements <- function(x, db) {
+    joinRequirements <- list(
+        'deployments' = c('organization_code', 'deployment_code'),
+        'recordings' = c('organization_code', 'deployment_code', 'recording_code'),
+        'recording_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
+        'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code'),
+        'tracks' = c('organization_code', 'deployment_code', 'track_code')
+    )
+    warns <- vector('list', length=0)
+    for(t in names(joinRequirements)) {
+        if(!t %in% names(x)) {
+            next
+        }
+        this <- doJoinCheck(x[[t]], db[[t]], by=joinRequirements[[t]], ix=TRUE, verbose=FALSE)
+        diffs <- checkTableDiffs(this, db[[t]])
+        if(nrow(diffs) > 0) {
+            warns <- addWarning(warns,
+                                deployment=this$deployment_code[as.numeric(diffs$row)],
+                                table=t,
+                                type='Update Database Value',
+                                message=paste0('Updating value in column "', 
+                                               diffs$column, '":',
+                                               'OLD: ', diffs$old,
+                                               ', NEW:', diffs$new)
+            )
+        }
+        
+    }
+    if(!'warnings' %in% names(x)) {
+        x$warnings <- warns
+    } else {
+        x$warnings <- bind_rows(x$warnings, warns)
+    }
+    x
+}
+
+# before cast datetime cols to char    
+checkRowDiffs <- function(x, y) {
+    # store column, old, new
+    diffs <- list()
+    for(c in names(x)) {
+        if(!c %in% names(y)) {
+            next
+        }
+        valX <- x[[c]]
+        valY <- y[[c]]
+        if(is.na(valX) && is.na(valY)) {
+            next
+        }
+        if(grepl('_json', c)) {
+            valX <- fromJSON(valX)
+            # print(valY)
+            valY <- fromJSON(valY)
+            if(setequal(names(valX), names(valY))) {
+                valY <- valY[names(valX)]
+            }
+            valX <- toJSON(valX)
+            valY <- toJSON(valY)
+        }
+        if(isTRUE(all.equal(valX, valY))) {
+            next
+        }
+        diffs[[c]] <- list(old=as.character(y[[c]]), new=as.character(x[[c]]))
+    }
+    bind_rows(diffs, .id='column')
+}
+
+checkTableDiffs <- function(x, y) {
+    commNames <- intersect(names(x), names(y))
+    x <- x[c(commNames, 'new','JOINIX')]
+    y <- y[commNames]
+    for(c in grep('datetime', names(x), value=TRUE)) {
+        x[[c]] <- ymd_hms(psxTo8601(x[[c]]))
+    }
+    for(c in grep('datetime', names(y), value=TRUE)) {
+        y[[c]] <- ymd_hms(psxTo8601(y[[c]]))
+    }
+    for(c in grep('json', names(x), value=TRUE)) {
+        x[[c]] <- gsub("'", '"', x[[c]])
+    }
+    for(c in grep('json', names(y), value=TRUE)) {
+        y[[c]] <- gsub("'", '"', y[[c]])
+    }
+    result <- vector('list', length=nrow(x))
+    names(result) <- 1:nrow(x)
+    for(i in 1:nrow(x)) {
+        if(isTRUE(x$new[i])) {
+            next
+        }
+        diffs <- checkRowDiffs(x[i,], y[x$JOINIX[i],])
+        result[[i]] <- diffs
+    }
+    bind_rows(result, .id='row')
+}
