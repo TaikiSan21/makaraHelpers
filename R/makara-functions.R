@@ -794,15 +794,17 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
         }
         this <- doJoinCheck(x[[t]], db[[t]], by=joinRequirements[[t]], ix=TRUE, verbose=FALSE)
         diffs <- checkTableDiffs(this, db[[t]])
-        newNA <- is.na(diffs$new)
-        if(isFALSE(replaceWithNA) &&
-           any(newNA)) {
-            for(d in which(newNA)) {
-                val <- diffs$old[d]
-                class(val) <- class(this[[diffs$column[d]]])
-                x[[t]][diffs$row[d], diffs$column[d]] <- val
+        if(nrow(diffs) > 0) {
+            newNA <- is.na(diffs$new)
+            if(isFALSE(replaceWithNA) &&
+               any(newNA)) {
+                for(d in which(newNA)) {
+                    val <- diffs$old[d]
+                    class(val) <- class(this[[diffs$column[d]]])
+                    x[[t]][diffs$row[d], diffs$column[d]] <- val
+                }
+                diffs <- diffs[!newNA, ]
             }
-            diffs <- diffs[!newNA, ]
         }
         if(nrow(diffs) > 0) {
             warns <- addWarning(warns,
