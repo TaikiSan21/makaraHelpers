@@ -817,6 +817,9 @@ checkDbReplacements <- function(x, db) {
         if(!t %in% names(x)) {
             next
         }
+        if(t == 'recording_intervals') {
+            db[[t]]$recording_interval_start_datetime <- psxTo8601(db[[t]]$recording_interval_start_datetime)
+        }
         this <- doJoinCheck(x[[t]], db[[t]], by=joinRequirements[[t]], ix=TRUE, verbose=FALSE)
         diffs <- checkTableDiffs(this, db[[t]])
         if(nrow(diffs) > 0) {
