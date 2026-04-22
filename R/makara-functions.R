@@ -877,3 +877,26 @@ checkTableDiffs <- function(x, y) {
     }
     bind_rows(result, .id='row')
 }
+
+combineDeviceCodes <- function(dep, rec) {
+    recCodes <- select(
+        rec,
+        deployment_code, recording_device_codes
+    ) %>% 
+        summarise(device_codes=paste0(recording_device_codes, collapse=','),
+                  .by=deployment_code)
+    dep <- left_join(
+        dep,
+        recCodes,
+        by='deployment_code',
+        relationship='one-to-one'
+    )
+    dep <- unite(dep, 'deployment_device_codes',
+                 c('deployment_device_codes', 'device_codes'),
+                 sep=',',
+                 na.rm=TRUE) %>% 
+        mutate(deployment_device_codes=paste0(
+            unique(strsplit(gsub(' ', '', deployment_device_codes), ',')[[1]]),
+            collapse=','))
+    dep
+}
