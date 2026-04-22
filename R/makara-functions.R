@@ -918,6 +918,9 @@ combineDeviceCodes <- function(dep, rec) {
     dep$deployment_device_codes <- sapply(dep$deployment_device_codes, function(x) {
         x <- gsub(' ', '', x)
         x <- unique(strsplit(x, ',')[[1]])
+        if(all(is.na(x))) {
+            return(NA)
+        }
         paste0(x, collapse=',')
     }, USE.NAMES = FALSE)
     dep
