@@ -803,6 +803,15 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
                     class(val) <- class(this[[diffs$column[d]]])
                     x[[t]][diffs$row[d], diffs$column[d]] <- val
                 }
+                warns <- addWarning(warns,
+                                    deployment=this$deployment_code[diffs$row[newNA]],
+                                    table=t,
+                                    type='Prevented Overwriting With NA',
+                                    message=paste0('Column "', diffs$column[newNA],
+                                                   '" in processed data was NA, but',
+                                                   ' database had value of ', diffs$old[newNA],
+                                                   ' that will not be overwritten')
+                )
                 diffs <- diffs[!newNA, ]
             }
         }
