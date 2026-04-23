@@ -136,7 +136,7 @@ addWarning <- function(x, deployment, table, type, message) {
 # mandatory is constant list 
 # ncei flag is whether to check columns that are only mandatory for NCEI
 # dropEmpty is flag whether to drop empty non-mandatory columns from output
-checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
+checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtra=TRUE) {
     result <- templates[names(x)]
     onlyNotLost <- c('recording_start_datetime',
                      'recording_duration_secs',
@@ -201,7 +201,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE) {
             warns <- addWarning(warns, deployment='All', table=n, type='Extra Columns',
                                 message=paste0('Extra columns ', printN(names(thisData)[wrongNames], Inf),
                                                ' are present'))
-            thisData <- thisData[!wrongNames]
+            if(isTRUE(dropExtra)) {
+                thisData <- thisData[!wrongNames]
+            }
         }
         # check that codes are unique if they should be
         
