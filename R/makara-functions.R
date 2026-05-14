@@ -804,6 +804,9 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
                 for(d in which(newNA)) {
                     val <- diffs$old[d]
                     class(val) <- class(this[[diffs$column[d]]])
+                    if(inherits(val, 'POSIXct')) {
+                        val <- psxTo8601(val)
+                    }
                     x[[t]][diffs$row[d], diffs$column[d]] <- val
                 }
                 warns <- addWarning(warns,
