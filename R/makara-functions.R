@@ -782,7 +782,8 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
         'recordings' = c('organization_code', 'deployment_code', 'recording_code'),
         'recording_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
         'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code'),
-        'tracks' = c('organization_code', 'deployment_code', 'track_code')
+        'tracks' = c('organization_code', 'deployment_code', 'track_code'),
+        'sensor_datasets' = c('organization_code', 'deployment_code', 'sensor_dataset_code')
     )
     warns <- vector('list', length=0)
     if(all(c('deployments', 'recordings') %in% names(x))) {
