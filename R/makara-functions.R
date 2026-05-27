@@ -162,6 +162,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
         vals
     })
     for(n in names(x)) {
+        if(n == 'warnings') {
+            next
+        }
         thisTemp <- templates[[n]]
         thisMand <- mandatory[[n]]$always
         thisNcei <- mandatory[[n]]$ncei
@@ -529,7 +532,7 @@ joinRequirements <- list(
 )
 checkAlreadyDb <- function(x, db) {
     # tables to not check against
-    noCheck <- c('detections', 'sensor_values', 'track_positions')
+    noCheck <- c('detections', 'sensor_values', 'track_positions', 'warnings')
     for(j in names(x)) {
         if(j %in% noCheck) {
             next
