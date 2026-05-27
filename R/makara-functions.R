@@ -163,6 +163,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
     })
     for(n in names(x)) {
         if(n == 'warnings') {
+            result[[n]] <- x$warnings
             next
         }
         thisTemp <- templates[[n]]
