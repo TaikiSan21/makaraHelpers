@@ -989,3 +989,59 @@ nowUTC <- function() {
     attr(now, 'tzone') <- 'UTC'
     now
 }
+
+squishList <- function(myList, unique=FALSE) {
+    myNames <- unique(names(myList))
+    if(is.null(myNames)) return(myList)
+    result <- vector('list', length=length(myNames))
+    names(result) <- myNames
+    for(n in myNames) {
+        whichThisName <- which(names(myList)==n)
+        thisNameData <- myList[whichThisName]
+        # thisClasses <- sapply(thisNameData, class)
+        # This is a mess, but oh well.
+        result[[n]] <- if(length(whichThisName)==1) {
+            thisNameData[[1]]
+            # } else if('list' %in% thisClasses) {
+        } else if(all(sapply(thisNameData, function(x) inherits(x, 'list')))) {
+            thisNameData <- unlist(thisNameData, recursive = FALSE)
+            names(thisNameData) <- gsub(paste0(n, '\\.'), '', names(thisNameData))
+            squishList(thisNameData, unique)
+            # } else if(all(thisClasses=='data.frame')) {
+        } else if(all(sapply(thisNameData, function(x) inherits(x, 'data.frame')))) {
+            if(isTRUE(unique)) {
+                distinct(bind_rows(thisNameData))
+            } else {
+                bind_rows(thisNameData)
+            }
+            # } else if(all(thisClasses=='NULL')) {
+        } else if(all(sapply(thisNameData, function(x) inherits(x, 'NULL')))) {
+            next
+        } else if(all(sapply(thisNameData, function(x) inherits(x, 'matrix'))) &&
+                  length(unique(sapply(thisNameData, ncol))) == 1) {
+            do.call(rbind, thisNameData)
+        } else {
+            # thisNameData[[1]]
+            if(isTRUE(unique)) {
+                unique(unlist(thisNameData, use.names = FALSE))
+            } else {
+                unlist(thisNameData, use.names = FALSE)
+            }
+        }
+    }
+    result
+}
+
+captureWarnings <- function(expr, deployment, table, type, name) {
+    warns <- list()
+    x <- withCallingHandlers(expr, warning = function(w) {
+        msg <- conditionMessage(w)
+        warns <<- addWarning(warns, deployment=deployment, table=table, type=type, message=msg)
+    })
+    ##
+    
+    x <- list('output'=x)
+    names(x) <- name
+    x$warnings <- warns
+    x
+}
