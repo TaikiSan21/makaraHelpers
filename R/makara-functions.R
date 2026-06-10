@@ -121,13 +121,13 @@ formatDatetime <- function(date, time, warn=TRUE, type=c('char', 'posix')) {
 }
 
 # Helper for tracking warnings in various checking functions
-addWarning <- function(x, deployment, table, type, message) {
+addWarning <- function(x, deployment, table, type, message, row=NA) {
     if('warnings' %in% names(x)) {
         x$warnings <- addWarning(x$warnings, deployment=deployment, table=table,
-                                 type=type, message=message)
+                                 type=type, message=message, row=row)
         return(x)
     }
-    bind_rows(x, list(deployment=deployment, table=table, type=type, message=message))
+    bind_rows(x, list(deployment=deployment, row=row, table=table, type=type, message=message))
 }
 
 # Check data against templates for missing mandatory data and other issues
@@ -220,6 +220,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             if(any(dupeDeps)) {
                 warns <- addWarning(warns, 
                                     deployment=checkDupeDeps$deployment_code[dupeDeps],
+                                    row=which(dupeDeps),
                                     table=n,
                                     type=paste0('Duplicated ', codePrint),
                                     message=paste0(codePrint, 
@@ -248,7 +249,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             goodTime <- !is.na(times)
             thisData[[t]][!alreadyNa][goodTime] <- times[goodTime]
             if(any(!goodTime)) {
-                warns <- addWarning(warns, deployment=thisData$deployment_code[!alreadyNa][!goodTime],
+                warns <- addWarning(warns, 
+                                    deployment=thisData$deployment_code[!alreadyNa][!goodTime],
+                                    row=which(!alreadyNa)[!goodTime],
                                     type='Invalid Time',
                                     table=n,
                                     message=paste0("Time '", thisData[[t]][!alreadyNa][!goodTime], "' in column '",
@@ -279,6 +282,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             if(any(futureStart)) {
                 warns <- addWarning(warns,
                                     deployment=thisData$deployment_code[!naStart][futureStart],
+                                    row=which(!naStart)[futureStart],
                                     type='Start Time in Future',
                                     table=n,
                                     message=paste0('Time ', thisData[[startCol]][!naStart][futureStart],
@@ -290,6 +294,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             if(any(startAfterEnd)) {
                 warns <- addWarning(warns,
                                     deployment=thisData$deployment_code[hasBoth][startAfterEnd],
+                                    row=which(hasBoth)[startAfterEnd],
                                     type='Start After End',
                                     table=n,
                                     message=paste0('Time ', thisData[[startCol]][hasBoth][startAfterEnd],
@@ -306,7 +311,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             oob <- !is.na(thisData[[l]]) &
                 (thisData[[l]] > 90 | thisData[[l]] < -90)
             if(any(oob)) {
-                warns <- addWarning(warns, deployment=thisData$deployment_code[oob],
+                warns <- addWarning(warns,
+                                    deployment=thisData$deployment_code[oob],
+                                    row=which(oob),
                                     type='Latitude Out of Bounds',
                                     table=n,
                                     message=paste0("Latitude '", thisData[[l]][oob], "' in column '",
@@ -319,7 +326,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             oob <- !is.na(thisData[[l]]) &
                 (thisData[[l]] > 180 | thisData[[l]] < -180)
             if(any(oob)) {
-                warns <- addWarning(warns, deployment=thisData$deployment_code[oob],
+                warns <- addWarning(warns, 
+                                    deployment=thisData$deployment_code[oob],
+                                    row=which(oob),
                                     type='Longitude Out of Bounds',
                                     table=n,
                                     message=paste0("Longitude '", thisData[[l]][oob], "' in column '",
@@ -343,7 +352,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             if(m == 'recording_timezone') {
                 badTz <- !grepl('^UTC[+-]?[0-9:]{0,5}$', thisData[[m]])
                 if(any(badTz)) {
-                    warns <- addWarning(warns, deployment=thisData$deployment_code[badTz],
+                    warns <- addWarning(warns, 
+                                        deployment=thisData$deployment_code[badTz],
+                                        row=which(badTz),
                                         type='Invalid Timezone',
                                         table=n,
                                         message=paste0('Timezone ', thisData[[m]][badTz], ' is invalid'))
@@ -375,7 +386,9 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             }
             
             if(any(naVals)) {
-                warns <- addWarning(warns, deployment=unique(thisData$deployment_code[naVals]),
+                warns <- addWarning(warns,
+                                    deployment=thisData$deployment_code[naVals],
+                                    row=which(naVals),
                                     type='NA in Mandatory Field',
                                     table=n,
                                     message=paste0("Mandatory column '",
