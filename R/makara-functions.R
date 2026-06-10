@@ -475,6 +475,7 @@ checkDbValues <- function(x, db) {
     recDevCheck <- is.na(recDevCheck$JOINCHECK)
     if(any(recDevCheck)) {
         warns <- addWarning(warns, deployment=x$recordings$deployment_code[recDevCheck],
+                            row=which(recDevCheck),
                             table='recordings',
                             type="New 'device_code'",
                             message=paste0('recording_device_code ', x$recordings$recording_device_codes[recDevCheck],
@@ -488,6 +489,7 @@ checkDbValues <- function(x, db) {
     missProj <- is.na(projCheck$JOINCHECK)
     if(any(missProj)) {
         warns <- addWarning(warns, deployment=x$deployments$deployment_code[missProj],
+                            row=which(missProj),
                             table='deployments',
                             type="New 'project_code'",
                             message=paste0('project_code ', x$deployments$project_code[missProj], 
@@ -501,6 +503,7 @@ checkDbValues <- function(x, db) {
     missSite <- is.na(siteCheck$JOINCHECK)
     if(any(missSite)) {
         warns <- addWarning(warns, deployment=x$deployments$deployment_code[missSite],
+                            row=which(missSite),
                             table='deployments', 
                             type="New 'site_code'",
                             message=paste0('site_code ', x$deployments$site_code[missSite], 
@@ -520,6 +523,7 @@ checkDbValues <- function(x, db) {
     missDev <- is.na(devCheck$JOINCHECK) & !is.na(devCheck$deployment_device_codes)
     if(any(missDev)) {
         warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev],
+                            row=which(missDev),
                             table='deployments',
                             type="New 'device_code'",
                             message=paste0('device_code ', devCheck$deployment_device_codes[missDev],
@@ -590,6 +594,7 @@ checkDetectionData <- function(x) {
     if(any(anaCheck$new)) {
         warns <- addWarning(warns, 
                             deployment=anaCheck$deployment_code[anaCheck$new],
+                            row=which(anaCheck$new),
                             type='analysis_code not present in analyses',
                             table='detections',
                             message=paste0("analysis code '", anaCheck$analysis_code[anaCheck$new],
@@ -604,6 +609,7 @@ checkDetectionData <- function(x) {
     if(any(speciesCheck$new)) {
         warns <- addWarning(warns, 
                             deployment=speciesCheck$deployment_code[speciesCheck$new],
+                            row=which(speciesCheck$new),
                             type='detection_sound_source_code not present in analysis_sound_source_codes',
                             table='detections',
                             message=paste0("detection_sound_source_code '",
@@ -866,6 +872,7 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
                 }
                 warns <- addWarning(warns,
                                     deployment=this$deployment_code[diffs$row[newNA]],
+                                    row=diffs$row[newNa],
                                     table=t,
                                     type='Prevented Overwriting With NA',
                                     message=paste0('Column "', diffs$column[newNA],
@@ -879,6 +886,7 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
         if(nrow(diffs) > 0) {
             warns <- addWarning(warns,
                                 deployment=this$deployment_code[diffs$row],
+                                row=diffs$row,
                                 table=t,
                                 type='Update Database Value',
                                 message=paste0('Updating value in column "', 
