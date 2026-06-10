@@ -872,7 +872,7 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
                 }
                 warns <- addWarning(warns,
                                     deployment=this$deployment_code[diffs$row[newNA]],
-                                    row=diffs$row[newNa],
+                                    row=diffs$row[newNA],
                                     table=t,
                                     type='Prevented Overwriting With NA',
                                     message=paste0('Column "', diffs$column[newNA],
