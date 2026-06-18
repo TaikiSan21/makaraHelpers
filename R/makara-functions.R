@@ -1058,7 +1058,7 @@ captureWarnings <- function(expr, deployment, table, type, name) {
     x <- withCallingHandlers(expr, warning = function(w) {
         msg <- conditionMessage(w)
         warns <<- addWarning(warns, deployment=deployment, table=table, type=type, message=msg)
-        tryInvokeRestart('muffleWarnings')
+        tryInvokeRestart('muffleWarning')
     })
     x <- list('output'=x)
     names(x) <- name
