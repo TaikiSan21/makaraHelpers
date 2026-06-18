@@ -298,13 +298,13 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
                                     type='Start After End',
                                     table=n,
                                     message=paste0('Time ', thisData[[startCol]][hasBoth][startAfterEnd],
-                                                  ' in column ', startCol,
-                                                  ' is after time ', thisData[[endCol]][hasBoth][startAfterEnd],
-                                                  ' in column ', endCol)
+                                                   ' in column ', startCol,
+                                                   ' is after time ', thisData[[endCol]][hasBoth][startAfterEnd],
+                                                   ' in column ', endCol)
                 )
             }
         }
-            
+        
         # Check coordinate column ranges
         latCols <- grep('latitude', names(thisData), value=TRUE)
         for(l in latCols) {
@@ -1058,9 +1058,8 @@ captureWarnings <- function(expr, deployment, table, type, name) {
     x <- withCallingHandlers(expr, warning = function(w) {
         msg <- conditionMessage(w)
         warns <<- addWarning(warns, deployment=deployment, table=table, type=type, message=msg)
+        tryInvokeRestart('muffleWarnings')
     })
-    ##
-    
     x <- list('output'=x)
     names(x) <- name
     x$warnings <- warns
