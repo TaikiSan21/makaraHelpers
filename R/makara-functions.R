@@ -218,13 +218,18 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
             dupeDeps <- checkDupeDeps$dupe
             codePrint <- paste0('"', paste0(uniqueCols, collapse='-'), '"')
             if(any(dupeDeps)) {
+                if('deployment_code' %in% names(checkDupeDeps)) {
+                    depPrint <- checkDupeDeps$deployment_code[dupeDeps]
+                } else {
+                    depPrint <- ''
+                }
                 warns <- addWarning(warns, 
-                                    deployment=checkDupeDeps$deployment_code[dupeDeps],
+                                    deployment=depPrint,
                                     row=which(dupeDeps),
                                     table=n,
                                     type=paste0('Duplicated ', codePrint),
                                     message=paste0(codePrint, 
-                                                   checkDupeDeps$deployment_code[dupeDeps],
+                                                   depPrint,
                                                    ' has multiple entries in ', n)
                 )
             }
