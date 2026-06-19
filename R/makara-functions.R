@@ -137,7 +137,7 @@ addWarning <- function(x, deployment, table, type, message, row=NA) {
 # ncei flag is whether to check columns that are only mandatory for NCEI
 # dropEmpty is flag whether to drop empty non-mandatory columns from output
 checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtra=TRUE) {
-    result <- templates[names(x)]
+    result <- templates[names(x)[names(x) %in% names(templates)]]
     onlyNotLost <- c('recording_start_datetime',
                      'recording_duration_secs',
                      'recording_interval_secs',
