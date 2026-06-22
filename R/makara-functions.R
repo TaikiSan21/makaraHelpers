@@ -145,6 +145,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
                      'recording_n_channels',
                      'recording_timezone')
     col_defs <- makaraValidatr::column_definitions
+    refs <- makaraValidatr::reference_tables
     mandatory <- lapply(col_defs, function(x) {
         list(
             'always' = x$name[x$required],
@@ -400,7 +401,56 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
                                                    m, "' is NA"))
             }
         }
+        # check some reference tables
+        if(n == 'detections') {
+            wrongSource <- !thisData$detection_sound_source_code %in% refs$sound_sources$code
+            if(any(wrongSource)) {
+                warns <- addWarning(warns,
+                                    deployment=thisData$deployment_code[wrongSource],
+                                    row=which(wrongSource),
+                                    type='Invalid Sound Source',
+                                    table=n,
+                                    message=paste0('Sound source code ', 
+                                                   thisData$detection_sound_source_code[wrongSource],
+                                                   ' is not a valid Makara sound_source code')
+                )
+            }
+            wrongCall <- !thisData$detection_call_type_code %in% refs$call_types$code
+            if(any(wrongCall)) {
+                warns <- addWarning(warns,
+                                    deployment=thisData$deployment_code[wrongCall],
+                                    row=which(wrongCall),
+                                    type='Invalid Call Type',
+                                    table=n,
+                                    message=paste0('Call type code ', 
+                                                   thisData$detection_call_type_code[wrongCall],
+                                                   ' is not a valid Makara call_type code')
+                )
+            }
+        }
         
+        if(n == 'analyses') {
+            badSources <- sapply(thisData$analysis_sound_source_codes, function(c) {
+                val <- strsplit(c, ',')[[1]]
+                bads <- !val %in% refs$sound_sources$code
+                if(any(bads)) {
+                    return(paste0(val[bads], collapse=','))
+                } 
+                NA
+            })
+            isBad <- !is.na(badSources)
+            if(any(isBad)) {
+                warns <- addWarning(warns,
+                                    deployment=thisData$deployment_code[isBad],
+                                    row=which(isBad),
+                                    table=n,
+                                    type='Invalid Sound Source',
+                                    message=paste0('Sound source code(s) ',
+                                                   badSources[isBad],
+                                                   ' is not a valid Makara sound_source code')
+                )
+            }
+        }
         # Remove columns that werent in our loaded data and are not mandatory
         if(isTRUE(dropEmpty)) {
             keepNames <- names(thisTemp) %in% unique(c(names(thisData), thisMand))
@@ -471,7 +521,10 @@ makeValidTime <- function(x) {
 # Check if codes being used are actually in database
 # Currently checks recording_device_codes, deployment device_codes, project_codes,
 # site_codes, using organization_code in the check
-checkDbValues <- function(x, db) {
+checkDbValues <- function(x, db=NULL) {
+    if(is.null(db)) {
+        return(x)
+    }
     warns <- vector('list', length=0)
     recDevCheck <- left_join(x$recordings,
                              mutate(db$devices, JOINCHECK=TRUE),
