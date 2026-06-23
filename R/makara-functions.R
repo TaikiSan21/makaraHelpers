@@ -451,6 +451,32 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
                 )
             }
         }
+        # check for JSON NA values
+        jsonCols <- grep('_json', names(thisData), value=TRUE)
+        if(length(jsonCols) > 0) {
+            for(j in jsonCols) {
+                naJson <- checkNaJSON(thisData[[j]], value=FALSE)
+                if(!any(naJson)) {
+                    next
+                }
+                naFields <- checkNaJSON(thisData[[j]], value=TRUE)
+                naDep <- if('deployment_code' %in% names(thisData)) {
+                    thisData$deployment_code[naJson]
+                } else {
+                    ''
+                }
+                warns <- addWarning(warns,
+                                    deployment=naDep,
+                                    row=which(naJson),
+                                    table=n,
+                                    type='JSON Field NA',
+                                    message=paste0('JSON field(s) ',
+                                                   printN(naFields[naJson], Inf),
+                                                   ' in column ', j, ' are NA')
+                )
+                                                   
+            }
+        }
         # Remove columns that werent in our loaded data and are not mandatory
         if(isTRUE(dropEmpty)) {
             keepNames <- names(thisTemp) %in% unique(c(names(thisData), thisMand))
@@ -464,6 +490,28 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
         result$warnings <- bind_rows(result$warnings, warns)
     }
     result
+}
+
+checkNaJSON <- function(x, value=FALSE) {
+    if(length(x) > 1) {
+        return(sapply(x, function(y) checkNaJSON(y, value=value), USE.NAMES = FALSE))
+    }
+    if(is.na(x) || x == '') {
+        if(isTRUE(value)) {
+            return('')
+        } else {
+            return(FALSE)
+        }
+    }
+    val <- fromJSON(x)
+    isNA <- sapply(val, function(v) {
+        if(any(is.na(v))) return(TRUE)
+        any(v == 'NA')
+    })
+    if(isFALSE(value)) {
+        return(any(isNA))
+    }
+    paste0(names(val)[isNA], collapse=',')
 }
 
 # Pretty printing helper for warnings created with `addWarning`
