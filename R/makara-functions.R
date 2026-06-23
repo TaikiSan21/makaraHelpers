@@ -573,6 +573,28 @@ checkDbValues <- function(x, db=NULL) {
     if(is.null(db)) {
         return(x)
     }
+    # if submission has these tables add them to the db to avoid angry
+    if('devices' %in% names(x)) {
+        db$devices <- bind_rows(
+            db$devices,
+            select(x$devices, organization_code, device_code)
+        )
+        db$devices <- distinct(select(db$devices, organization_code, device_code))
+    }
+    if('projects' %in% names(x)) {
+        db$projects <- bind_rows(
+            db$projects,
+            select(x$projects, organization_code, project_code)
+        )
+        db$projects <- distinct(select(db$projects, organization_code, project_code))     
+    }
+    if('sites' %in% names(x)) {
+        db$sites <- bind_rows(
+            db$sites,
+            select(x$sites, organization_code, site_code)
+        )
+        db$sites <- distinct(select(db$sites, organization_code, site_code))
+    }
     warns <- vector('list', length=0)
     recDevCheck <- left_join(x$recordings,
                              mutate(db$devices, JOINCHECK=TRUE),
@@ -654,6 +676,7 @@ joinRequirements <- list(
     'tracks' = c('organization_code', 'deployment_code', 'track_code'),
     'sensor_datasets' = c('organization_code', 'deployment_code', 'sensor_dataset_code')
 )
+# check if these entries are already in Makara using joinReqs above
 checkAlreadyDb <- function(x, db) {
     # tables to not check against
     noCheck <- c('detections', 'sensor_values', 'track_positions', 'warnings')
@@ -757,6 +780,7 @@ doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE, verbose=TRUE) {
 }
 
 # Only works after `checkAlreadyDb` run to create "new" column
+# just removes non-new rows from all tables with a 'new'
 dropAlreadyDb <- function(x, drop=FALSE) {
     for(n in names(x)) {
         if('new' %in% names(x[[n]])) {
@@ -949,7 +973,9 @@ formatBqMakara <- function(db_raw) {
     }
     result
 }
-
+# checks against existing values in database
+# warns if replacing with something new 
+# or if trying to overwrite with NA
 checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
     warns <- vector('list', length=0)
     if(all(c('deployments', 'recordings') %in% names(x))) {
