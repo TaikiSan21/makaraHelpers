@@ -605,12 +605,9 @@ checkDbValues <- function(x, db=NULL) {
         )
     missRecDev <- is.na(recDevCheck$JOINCHECK)
     if(any(missRecDev)) {
-        # split these into buckets
-        # missing everywhere
-        # missing from your org, but 1 match so replace
-        # missing form your org, >1 match so cant
         missCodes <- recDevCheck$recording_device_codes[missRecDev]
         missOrgs <- recDevCheck$organization_code[missRecDev]
+        missRows <- recDevCheck$ORIGROW[missRecDev]
         missNoMatch <- rep(FALSE, length(missCodes))
         missOneMatch <- rep(FALSE, length(missCodes))
         newOneMatch <- character(0)
@@ -626,10 +623,10 @@ checkDbValues <- function(x, db=NULL) {
                 matchOrg <- db$devices$organization_code[inOther]
                 newCode <- paste0(matchOrg, ':', missCodes[c])
                 newOneMatch <- c(newOneMatch, newCode)
-                # this case I do ORG:CODE reference?
-                # replace in x$recordings, BUT need to double check it works if multi-device listed
-                # gsub ^(...)$ ^ORG:\\1$
-                # add this as a param to disable probably
+                x$recordings$recording_device_codes[missRows[c]] <- 
+                    gsub(paste0('^(', missCodes[c], ')(,|$)'), 
+                         paste0(matchOrg, ':', '\\1\\2'), 
+                         x$recordings$recording_device_codes[missRows[c]])
             }
             if(nMatch > 1) {
                 missMultiMatch[c] <- TRUE
@@ -662,7 +659,8 @@ checkDbValues <- function(x, db=NULL) {
                                 type="New 'device_code'",
                                 message=paste0('recording_device_code ', 
                                                recDevCheck$recording_device_codes[missRecDev][missMultiMatch],
-                                               ' is not present in database.devices, and matched multiple orgs'))
+                                               ' is not present for ', missOrgs[missMultiMatch],
+                                               ', but matched multiple other orgs so could not be replaced.'))
         }
         # warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev],
         #                     row=recDevCheck$ORIGROW[missRecDev],
@@ -713,13 +711,70 @@ checkDbValues <- function(x, db=NULL) {
         )
     missDev <- is.na(devCheck$JOINCHECK) & !is.na(devCheck$deployment_device_codes)
     if(any(missDev)) {
-        warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev],
-                            row=devCheck$ORIGROW[missDev],
-                            table='deployments',
-                            type="New 'device_code'",
-                            message=paste0('device_code ', devCheck$deployment_device_codes[missDev],
-                                           ' is not present in database.devices')
-        )
+        missCodes <- devCheck$deployment_device_codes[missDev]
+        missOrgs <- devCheck$organization_code[missDev]
+        missRows <- devCheck$ORIGROW[missDev]
+        missNoMatch <- rep(FALSE, length(missCodes))
+        missOneMatch <- rep(FALSE, length(missCodes))
+        newOneMatch <- character(0)
+        missMultiMatch <- rep(FALSE, length(missCodes)) 
+        for(c in seq_along(missCodes)) {
+            inOther <- db$devices$device_code == missCodes[c]
+            nMatch <- sum(inOther)
+            if(nMatch == 0) {
+                missNoMatch[c] <- TRUE
+            }
+            if(nMatch == 1) {
+                missOneMatch[c] <- TRUE
+                matchOrg <- db$devices$organization_code[inOther]
+                newCode <- paste0(matchOrg, ':', missCodes[c])
+                newOneMatch <- c(newOneMatch, newCode)
+                x$deployments$deployment_device_codes[missRows[c]] <- 
+                    gsub(paste0('^(', missCodes[c], ')(,|$)'), 
+                         paste0(matchOrg, ':', '\\1\\2'), 
+                         x$deployments$deployment_device_codes[missRows[c]])
+            }
+            if(nMatch > 1) {
+                missMultiMatch[c] <- TRUE
+            }
+        }
+        if(any(missNoMatch)) {
+            warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev][missNoMatch],
+                                row=devCheck$ORIGROW[missDev][missNoMatch],
+                                table='deployments',
+                                type="New 'device_code'",
+                                message=paste0('deployment_device_codes ', 
+                                               devCheck$deployment_device_codes[missDev][missNoMatch],
+                                               ' is not present in database.devices'))
+        }
+        if(any(missOneMatch)) {
+            warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev][missOneMatch],
+                                row=devCheck$ORIGROW[missDev][missOneMatch],
+                                table='deployments',
+                                type="New 'device_code'",
+                                message=paste0('deployment_device_codes ', 
+                                               devCheck$deployment_device_codes[missDev][missOneMatch],
+                                               ' is not present for ', missOrgs[missOneMatch],
+                                               ', but matched exactly 1 other org. Replaced with ', 
+                                               newOneMatch))
+        }
+        if(any(missMultiMatch)) {
+            warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev][missMultiMatch],
+                                row=devCheck$ORIGROW[missDev][missMultiMatch],
+                                table='deployments',
+                                type="New 'device_code'",
+                                message=paste0('deployment_device_codes ', 
+                                               devCheck$deployment_device_codes[missDev][missMultiMatch],
+                                               ' is not present for ', missOrgs[missMultiMatch],
+                                               ', but matched multiple other orgs so could not be replaced.'))
+        }
+        # warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev],
+        #                     row=devCheck$ORIGROW[missDev],
+        #                     table='deployments',
+        #                     type="New 'device_code'",
+        #                     message=paste0('device_code ', devCheck$deployment_device_codes[missDev],
+        #                                    ' is not present in database.devices')
+        # )
     }
     if(!'warnings' %in% names(x)) {
         x$warnings <- warns
