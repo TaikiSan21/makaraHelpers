@@ -610,8 +610,10 @@ checkDbValues <- function(x, db=NULL) {
         # missing from your org, but 1 match so replace
         # missing form your org, >1 match so cant
         missCodes <- recDevCheck$recording_device_codes[missRecDev]
+        missOrgs <- recDevCheck$organization_code[missRecDev]
         missNoMatch <- rep(FALSE, length(missCodes))
         missOneMatch <- rep(FALSE, length(missCodes))
+        newOneMatch <- character(0)
         missMultiMatch <- rep(FALSE, length(missCodes)) 
         for(c in seq_along(missCodes)) {
             inOther <- db$devices$device_code == missCodes[c]
@@ -621,6 +623,9 @@ checkDbValues <- function(x, db=NULL) {
             }
             if(nMatch == 1) {
                 missOneMatch[c] <- TRUE
+                matchOrg <- db$devices$organization_code[inOther]
+                newCode <- paste0(matchOrg, ':', missCodes[c])
+                newOneMatch <- c(newOneMatch, newCode)
                 # this case I do ORG:CODE reference?
                 # replace in x$recordings, BUT need to double check it works if multi-device listed
                 # gsub ^(...)$ ^ORG:\\1$
@@ -646,7 +651,9 @@ checkDbValues <- function(x, db=NULL) {
                                 type="New 'device_code'",
                                 message=paste0('recording_device_code ', 
                                                recDevCheck$recording_device_codes[missRecDev][missOneMatch],
-                                               ' is not present in database.devices, but matched exactle 1 other org'))
+                                               ' is not present for ', missOrgs[missOneMatch],
+                                               ', but matched exactly 1 other org. Replaced with ', 
+                                               newOneMatch))
         }
         if(any(missMultiMatch)) {
             warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev][missMultiMatch],
