@@ -474,7 +474,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
                                                    printN(naFields[naJson], Inf),
                                                    ' in column ', j, ' are NA')
                 )
-                                                   
+                
             }
         }
         # Remove columns that werent in our loaded data and are not mandatory
@@ -596,18 +596,73 @@ checkDbValues <- function(x, db=NULL) {
         db$sites <- distinct(select(db$sites, organization_code, site_code))
     }
     warns <- vector('list', length=0)
-    recDevCheck <- left_join(x$recordings,
-                             mutate(db$devices, JOINCHECK=TRUE),
-                             by=c('organization_code', 'recording_device_codes'='device_code')
-    )
-    recDevCheck <- is.na(recDevCheck$JOINCHECK)
-    if(any(recDevCheck)) {
-        warns <- addWarning(warns, deployment=x$recordings$deployment_code[recDevCheck],
-                            row=which(recDevCheck),
-                            table='recordings',
-                            type="New 'device_code'",
-                            message=paste0('recording_device_code ', x$recordings$recording_device_codes[recDevCheck],
-                                           ' is not present in database.devices'))
+    recDevCheck <- x$recordings %>% 
+        mutate(ORIGROW=1:n(),
+               recording_device_codes = strsplit(recording_device_codes, ',')) %>% 
+        unnest(recording_device_codes) %>% 
+        left_join(mutate(db$devices, JOINCHECK=TRUE),
+                  by=c('organization_code', 'recording_device_codes'='device_code')
+        )
+    missRecDev <- is.na(recDevCheck$JOINCHECK)
+    if(any(missRecDev)) {
+        # split these into buckets
+        # missing everywhere
+        # missing from your org, but 1 match so replace
+        # missing form your org, >1 match so cant
+        missCodes <- recDevCheck$recording_device_codes[missRecDev]
+        missNoMatch <- rep(FALSE, length(missCodes))
+        missOneMatch <- rep(FALSE, length(missCodes))
+        missMultiMatch <- rep(FALSE, length(missCodes)) 
+        for(c in seq_along(missCodes)) {
+            inOther <- db$devices$device_code == missCodes[c]
+            nMatch <- sum(inOther)
+            if(nMatch == 0) {
+                missNoMatch[c] <- TRUE
+            }
+            if(nMatch == 1) {
+                missOneMatch[c] <- TRUE
+                # this case I do ORG:CODE reference?
+                # replace in x$recordings, BUT need to double check it works if multi-device listed
+                # gsub ^(...)$ ^ORG:\\1$
+                # add this as a param to disable probably
+            }
+            if(nMatch > 1) {
+                missMultiMatch[c] <- TRUE
+            }
+        }
+        if(any(missNoMatch)) {
+            warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev][missNoMatch],
+                                row=recDevCheck$ORIGROW[missRecDev][missNoMatch],
+                                table='recordings',
+                                type="New 'device_code'",
+                                message=paste0('recording_device_code ', 
+                                               recDevCheck$recording_device_codes[missRecDev][missNoMatch],
+                                               ' is not present in database.devices'))
+        }
+        if(any(missOneMatch)) {
+            warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev][missOneMatch],
+                                row=recDevCheck$ORIGROW[missRecDev][missOneMatch],
+                                table='recordings',
+                                type="New 'device_code'",
+                                message=paste0('recording_device_code ', 
+                                               recDevCheck$recording_device_codes[missRecDev][missOneMatch],
+                                               ' is not present in database.devices, but matched exactle 1 other org'))
+        }
+        if(any(missMultiMatch)) {
+            warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev][missMultiMatch],
+                                row=recDevCheck$ORIGROW[missRecDev][missMultiMatch],
+                                table='recordings',
+                                type="New 'device_code'",
+                                message=paste0('recording_device_code ', 
+                                               recDevCheck$recording_device_codes[missRecDev][missMultiMatch],
+                                               ' is not present in database.devices, and matched multiple orgs'))
+        }
+        # warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev],
+        #                     row=recDevCheck$ORIGROW[missRecDev],
+        #                     table='recordings',
+        #                     type="New 'device_code'",
+        #                     message=paste0('recording_device_code ', recDevCheck$recording_device_codes[missRecDev],
+        #                                    ' is not present in database.devices'))
         # warning(sum(recDevCheck), ' deployments (', printN(x$recordings$deployment_code[recDevCheck], Inf),
         #         ') have recording device codes that are not present in the database')
     }
@@ -642,7 +697,8 @@ checkDbValues <- function(x, db=NULL) {
     devCheck <- select(
         x$deployments, organization_code, deployment_code, deployment_device_codes
     ) %>% 
-        mutate(deployment_device_codes = strsplit(deployment_device_codes, ',')) %>% 
+        mutate(ORIGROW=1:n(),
+               deployment_device_codes = strsplit(deployment_device_codes, ',')) %>% 
         unnest(deployment_device_codes) %>% 
         left_join(
             mutate(db$devices, JOINCHECK=TRUE),
@@ -651,7 +707,7 @@ checkDbValues <- function(x, db=NULL) {
     missDev <- is.na(devCheck$JOINCHECK) & !is.na(devCheck$deployment_device_codes)
     if(any(missDev)) {
         warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev],
-                            row=which(missDev),
+                            row=devCheck$ORIGROW[missDev],
                             table='deployments',
                             type="New 'device_code'",
                             message=paste0('device_code ', devCheck$deployment_device_codes[missDev],
