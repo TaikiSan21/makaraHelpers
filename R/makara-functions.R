@@ -122,7 +122,7 @@ formatDatetime <- function(date, time, warn=TRUE, type=c('char', 'posix')) {
 
 # Helper for tracking warnings in various checking functions
 addWarning <- function(x, deployment, table, type, message, row=NA) {
-    if(!is.na(row)) {
+    if(!all(is.na(row))) {
         row <- as.character(row)
     }
     if('warnings' %in% names(x)) {
