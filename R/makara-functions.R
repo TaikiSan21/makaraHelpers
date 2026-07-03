@@ -247,7 +247,7 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
         }
         # check that values in mandatory columns are not NA or ''
         for(m in thisMand[!missMand]) {
-            if(is.character(thisTemp[[m]])) {
+            if(is.character(thisData[[m]])) {
                 blankChar <- !is.na(thisData[[m]]) & thisData[[m]] == ''
                 if(any(blankChar)) {
                     # warns <- addWarning(warns, deployment=thisData$deployment_code[blankChar],
