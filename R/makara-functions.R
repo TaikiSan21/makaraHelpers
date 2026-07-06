@@ -830,7 +830,7 @@ joinRequirements <- list(
     'sensor_datasets' = c('organization_code', 'deployment_code', 'sensor_dataset_code')
 )
 if(packageVersion('makaraValidatr') >= '0.5.0') {
-    joinRequirements$analyses <- c('organization_code', 'deployment_code', 'analysis_code')
+    joinRequirements$analyses <- c('organization_code', 'deployment_code', 'analysis_code', 'deployment_organization_code')
 }
 # check if these entries are already in Makara using joinReqs above
 checkAlreadyDb <- function(x, db) {
@@ -853,7 +853,29 @@ checkAlreadyDb <- function(x, db) {
                                                                 format='%Y-%m-%d %H:%M:%S')
         }
         if(j %in% names(x)) {
+            if(j == 'analyses') {
+                # ORG:DEP_CODE pass ORG to dep_org
+                noDepOrg <- FALSE
+                if(!'deployment_organization_code' %in% names(x[[j]])) {
+                    x[[j]]$deployment_organization_code <- x[[j]]$organization_code
+                    noDepOrg <- TRUE
+                }
+                origDep <- x[[j]]$deployment_code
+                for(i in seq_along(origDep)) {
+                    if(grepl(':', origDep[i])) {
+                        org_dep <- strsplit(origDep[i], ':')[[1]]
+                        x[[j]]$deployment_organization_code[i] <- org_dep[1]
+                        x[[j]]$deployment_code[i] <- org_dep[2]
+                    }
+                }
+            }
             x[[j]] <- doJoinCheck(x[[j]], db[[j]], by=joinRequirements[[j]], name=j)
+            if(j == 'analyses') {
+                if(isTRUE(noDepOrg)) {
+                    x[[j]]$deployment_organization_code <- NULL
+                }
+                x[[j]]$deployment_code <- origDep
+            }
         }
     }
     
