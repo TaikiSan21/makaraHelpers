@@ -1173,6 +1173,24 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
         if(t == 'recording_intervals') {
             db[[t]]$recording_interval_start_datetime <- psxTo8601(db[[t]]$recording_interval_start_datetime)
         }
+        if(t == 'analyses') {
+            # ORG:DEP_CODE pass ORG to dep_org
+            noDepOrg <- FALSE
+            if(!'deployment_organization_code' %in% names(x[[t]])) {
+                x[[t]]$deployment_organization_code <- x[[t]]$organization_code
+                noDepOrg <- TRUE
+            }
+            origDep <- x[[t]]$deployment_code
+            for(i in seq_along(origDep)) {
+                if(grepl(':', origDep[i])) {
+                    org_dep <- strsplit(origDep[i], ':')[[1]]
+                    x[[t]]$deployment_organization_code[i] <- org_dep[1]
+                    x[[t]]$deployment_code[i] <- org_dep[2]
+                }
+            }
+        }
+        # x[[j]] <- doJoinCheck(x[[j]], db[[j]], by=joinRequirements[[j]], name=j)
+        
         this <- doJoinCheck(x[[t]], db[[t]], by=joinRequirements[[t]], ix=TRUE, verbose=FALSE)
         diffs <- checkTableDiffs(this, db[[t]])
         if(nrow(diffs) > 0) {
@@ -1212,7 +1230,12 @@ checkDbReplacements <- function(x, db, replaceWithNA=FALSE) {
                                                ', NEW:', diffs$new)
             )
         }
-        
+        if(t == 'analyses') {
+            if(isTRUE(noDepOrg)) {
+                x[[t]]$deployment_organization_code <- NULL
+            }
+            x[[t]]$deployment_code <- origDep
+        }
     }
     if(!'warnings' %in% names(x)) {
         x$warnings <- warns
