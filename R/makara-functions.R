@@ -139,7 +139,10 @@ addWarning <- function(x, deployment, table, type, message, row=NA) {
 # mandatory is constant list 
 # ncei flag is whether to check columns that are only mandatory for NCEI
 # dropEmpty is flag whether to drop empty non-mandatory columns from output
-checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtra=TRUE, dropMandatoryNA=FALSE) {
+checkMakTemplate <- function(x, templates=NULL, ncei=FALSE, dropEmpty=FALSE, dropExtra=TRUE, dropMandatoryNA=FALSE) {
+    if(is.null(templates)) {
+        templates <- formatBasicTemplates()
+    }
     result <- templates[names(x)[names(x) %in% names(templates)]]
     onlyNotLost <- c('recording_start_datetime',
                      'recording_duration_secs',
@@ -147,8 +150,13 @@ checkMakTemplate <- function(x, templates, ncei=FALSE, dropEmpty=FALSE, dropExtr
                      'recording_sample_rate_khz',
                      'recording_n_channels',
                      'recording_timezone')
-    col_defs <- makaraValidatr::column_definitions
-    refs <- makaraValidatr::reference_tables
+    if(packageVersion('makaraValidatr')  >= '0.5.0') {
+        col_defs <-  makaraValidatr::load_column_definitions()
+        refs <- makaraValidatr::load_reference_tables()
+    } else {
+        col_defs <- makaraValidatr::column_definitions
+        refs <- makaraValidatr::reference_tables
+    }
     mandatory <- lapply(col_defs, function(x) {
         list(
             'always' = x$name[x$required],
@@ -966,7 +974,11 @@ writeTemplateOutput <- function(data, folder='outputs') {
 # folder containing template .csv files
 # applies column types for enforcing later
 formatBasicTemplates <- function() {
-    col_defs <- makaraValidatr::column_definitions
+    if(packageVersion('makaraValidatr')  >= '0.5.0') {
+        col_defs <-  makaraValidatr::load_column_definitions()
+    } else {
+        col_defs <- makaraValidatr::column_definitions
+    }
     
     result <- lapply(col_defs, function(x) {
         df <- data.frame(
