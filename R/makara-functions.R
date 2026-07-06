@@ -829,6 +829,9 @@ joinRequirements <- list(
     'tracks' = c('organization_code', 'deployment_code', 'track_code'),
     'sensor_datasets' = c('organization_code', 'deployment_code', 'sensor_dataset_code')
 )
+if(packageVersion('makaraValidatr') >= '0.5.0') {
+    joinRequirements$analyses <- c('organization_code', 'deployment_code', 'analysis_code')
+}
 # check if these entries are already in Makara using joinReqs above
 checkAlreadyDb <- function(x, db) {
     # tables to not check against
