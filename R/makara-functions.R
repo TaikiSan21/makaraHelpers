@@ -906,6 +906,10 @@ checkDetectionData <- function(x) {
                            deployment_code, 
                            analysis_code,
                            analysis_sound_source_codes))
+    orgFix <- fixOrgPrefix(ana, columns=c('deployment_code', 'analysis_code'))
+    for(c in names(orgFix)) {
+        ana[[c]] <- orgFix[[c]]$new
+    }
     warns <- vector('list', length=0)
     anaCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code'), verbose=F)
     if(any(anaCheck$new)) {
