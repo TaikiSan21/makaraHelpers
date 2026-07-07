@@ -1000,7 +1000,9 @@ fixOrgPrefix <- function(x, columns, orgCol='organization_code') {
         for(i in which(hasSplit)) {
             org_val <- strsplit(orig[i], ':')[[1]]
             new[i] <- org_val[2]
-            orgs[i] <- org_val[1]
+            if(any(hasOrgs)) {
+                orgs[i] <- org_val[1]
+            }
         }
         result[[c]] <- list(orig=orig, new=new)
     }
