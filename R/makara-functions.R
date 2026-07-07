@@ -783,10 +783,15 @@ checkDbValues <- function(x, db=NULL, updateDeviceOrgs=TRUE) {
                                                ', but matched multiple other orgs so could not be replaced.'))
         }
     }
-    projCheck <- left_join(x$deployments,
-                           mutate(db$projects, JOINCHECK=TRUE),
-                           by=c('project_code', 'organization_code'))
-    missProj <- is.na(projCheck$JOINCHECK)
+    # projCheck <- left_join(x$deployments,
+    #                        mutate(db$projects, JOINCHECK=TRUE),
+    #                        by=c('project_code', 'organization_code'))
+    # missProj <- is.na(projCheck$JOINCHECK)
+    projCheck <- doJoinCheck(x$deployments, 
+                             db$projects, 
+                             by=c('project_code', 'organization_code'),
+                             verbose=FALSE)
+    missProj <- projCheck$new
     if(any(missProj)) {
         warns <- addWarning(warns, deployment=x$deployments$deployment_code[missProj],
                             row=which(missProj),
@@ -797,10 +802,15 @@ checkDbValues <- function(x, db=NULL, updateDeviceOrgs=TRUE) {
         # warning(sum(missProj), ' deployments (', printN(x$deployments$deployment_code[missProj], Inf),
         #         ') have project codes that are not present in the database')
     }
-    siteCheck <- left_join(x$deployments,
-                           mutate(db$sites, JOINCHECK=TRUE),
-                           by=c('site_code', 'organization_code'))
-    missSite <- is.na(siteCheck$JOINCHECK)
+    # siteCheck <- left_join(x$deployments,
+    #                        mutate(db$sites, JOINCHECK=TRUE),
+    #                        by=c('site_code', 'organization_code'))
+    siteCheck <- doJoinCheck(x$deployments, 
+                             db$sites, 
+                             by=c('site_code', 'organization_code'), 
+                             verbose=FALSE)
+    missSite <- siteCheck$new
+    # missSite <- is.na(siteCheck$JOINCHECK)
     if(any(missSite)) {
         warns <- addWarning(warns, deployment=x$deployments$deployment_code[missSite],
                             row=which(missSite),
@@ -933,11 +943,18 @@ checkDetectionData <- function(x) {
 }
 
 # check if x is already in y by joining
-doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE, verbose=TRUE) {
+doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE, 
+                        fixOrgs=TRUE, orgCol='organization_code'. verbose=TRUE) {
     # x <- select(x, all_of(by))
     y <- distinct(select(y, all_of(by)))
     if(isTRUE(ix)) {
         y$JOINIX <- 1:nrow(y)
+    }
+    if(fixOrgs) {
+        orgFix <- fixOrgPrefix(x, columns=by, orgCol=orgCol)
+        for(c in names(orgFix)) {
+            x[[c]] <- orgFix[[c]]$new
+        }
     }
     y$JOINCHECK <- TRUE
     x <- left_join(
@@ -954,7 +971,40 @@ doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE, verbose=TRUE) {
         }
         message(sum(newX), ' out of ', nrow(x), name, ' are new (not yet in Makara)')
     }
+    if(fixOrgs) {
+        for(c in names(orgFix)) {
+            x[[c]] <- orgFix[[c]]$orig
+        }
+    }
     x
+}
+
+fixOrgPrefix <- function(x, columns, orgCol='organization_code') {
+    # codes <- grep('_code', names(x), value=TRUE)
+    columns <- columns[columns != orgCol]
+    hasOrg <- names(x) == orgCol
+    # codes <- codes[!hasOrg]
+    result <- vector('list', length(columns))
+    names(result) <- columns
+    if(any(hasOrg)) {
+        orgs <- x[[orgCol]]
+    }
+    for(c in columns) {
+        orig <- x[[c]]
+        new <- x[[c]]
+        hasSplit <- grepl(':', orig)
+        for(i in which(hasSplit)) {
+            org_val <- strsplit(orig[i], ':')[[1]]
+            new[i] <- org_val[2]
+            orgs[i] <- org_val[1]
+        }
+        result[[c]] <- list(orig=orig, new=new)
+    }
+    if(any(hasOrg)) {
+        result[[orgCol]] <- list(orig=x[[orgCol]], new=orgs)
+        x[[orgCol]] <- orgs
+    }
+    result
 }
 
 # Only works after `checkAlreadyDb` run to create "new" column
