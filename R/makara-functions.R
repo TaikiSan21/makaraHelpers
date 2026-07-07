@@ -986,6 +986,7 @@ doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE,
 fixOrgPrefix <- function(x, columns, orgCol='organization_code') {
     # codes <- grep('_code', names(x), value=TRUE)
     columns <- columns[columns != orgCol]
+    columns <- grep('_code', columns, value=TRUE)
     hasOrg <- names(x) == orgCol
     # codes <- codes[!hasOrg]
     result <- vector('list', length(columns))
