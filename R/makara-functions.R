@@ -944,7 +944,7 @@ checkDetectionData <- function(x) {
 
 # check if x is already in y by joining
 doJoinCheck <- function(x, y, by, name=NULL, ix=FALSE, 
-                        fixOrgs=TRUE, orgCol='organization_code'. verbose=TRUE) {
+                        fixOrgs=TRUE, orgCol='organization_code', verbose=TRUE) {
     # x <- select(x, all_of(by))
     y <- distinct(select(y, all_of(by)))
     if(isTRUE(ix)) {
