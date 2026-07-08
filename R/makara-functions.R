@@ -213,13 +213,14 @@ checkMakTemplate <- function(x, templates=NULL, ncei=FALSE, dropEmpty=FALSE, dro
             }
         }
         wrongNames <- !names(thisData) %in% names(thisTemp)
-        if(sum(wrongNames) > 0) {
+        if(sum(wrongNames) > 0 &&
+           isFALSE(dropExtra)) {
             warns <- addWarning(warns, deployment='All', table=n, type='Extra Columns',
                                 message=paste0('Extra columns ', printN(names(thisData)[wrongNames], Inf),
                                                ' are present'))
-            if(isTRUE(dropExtra)) {
-                thisData <- thisData[!wrongNames]
-            }
+        }
+        if(isTRUE(dropExtra)) {
+            thisData <- thisData[!wrongNames]
         }
         # check that codes are unique if they should be
         
@@ -366,7 +367,7 @@ checkMakTemplate <- function(x, templates=NULL, ncei=FALSE, dropEmpty=FALSE, dro
             naEnd <- is.na(thisData[[endCol]]) | thisData[[endCol]] == ''
             hasBoth <- !naStart & !naEnd
             futureStart <- ymd_hms(thisData[[startCol]][!naStart]) > nowUTC()
-            if(any(futureStart)) {
+            if(any(futureStart, na.rm=TRUE)) {
                 warns <- addWarning(warns,
                                     deployment=thisData$deployment_code[!naStart][futureStart],
                                     row=which(!naStart)[futureStart],
@@ -378,7 +379,7 @@ checkMakTemplate <- function(x, templates=NULL, ncei=FALSE, dropEmpty=FALSE, dro
                 )
             }
             startAfterEnd <- ymd_hms(thisData[[startCol]][hasBoth]) > ymd_hms(thisData[[endCol]][hasBoth])
-            if(any(startAfterEnd)) {
+            if(any(startAfterEnd, na.rm=TRUE)) {
                 warns <- addWarning(warns,
                                     deployment=thisData$deployment_code[hasBoth][startAfterEnd],
                                     row=which(hasBoth)[startAfterEnd],
@@ -620,7 +621,7 @@ checkDbValues <- function(x, db=NULL, updateDeviceOrgs=TRUE) {
     }
     warns <- vector('list', length=0)
     recDevCheck <- x$recordings %>% 
-        mutate(ORIGROW=1:n(),
+        mutate(ORIGROW=seq_len(n()),
                recording_device_codes = strsplit(recording_device_codes, ',')) %>% 
         unnest(recording_device_codes) %>% 
         left_join(mutate(db$devices, JOINCHECK=TRUE),
@@ -703,7 +704,7 @@ checkDbValues <- function(x, db=NULL, updateDeviceOrgs=TRUE) {
     devCheck <- select(
         x$deployments, organization_code, deployment_code, deployment_device_codes
     ) %>% 
-        mutate(ORIGROW=1:n(),
+        mutate(ORIGROW=seq_len(n()),
                deployment_device_codes = strsplit(deployment_device_codes, ',')) %>% 
         unnest(deployment_device_codes) %>% 
         left_join(
@@ -1357,8 +1358,8 @@ checkTableDiffs <- function(x, y) {
         y[[c]] <- gsub("'", '"', y[[c]])
     }
     result <- vector('list', length=nrow(x))
-    names(result) <- 1:nrow(x)
-    for(i in 1:nrow(x)) {
+    names(result) <- seq_len(nrow(x))
+    for(i in seq_len(nrow(x))) {
         if(isTRUE(x$new[i])) {
             next
         }
