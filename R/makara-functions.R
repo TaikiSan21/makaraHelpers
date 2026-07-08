@@ -624,6 +624,7 @@ checkDbValues <- function(x, db=NULL, updateDeviceOrgs=TRUE) {
         mutate(ORIGROW=seq_len(n()),
                recording_device_codes = strsplit(recording_device_codes, ',')) %>% 
         unnest(recording_device_codes) %>% 
+        filter(!is.na(recording_device_codes)) %>% 
         left_join(mutate(db$devices, JOINCHECK=TRUE),
                   by=c('organization_code', 'recording_device_codes'='device_code')
         )
@@ -707,6 +708,7 @@ checkDbValues <- function(x, db=NULL, updateDeviceOrgs=TRUE) {
         mutate(ORIGROW=seq_len(n()),
                deployment_device_codes = strsplit(deployment_device_codes, ',')) %>% 
         unnest(deployment_device_codes) %>% 
+        filter(!is.na(deployment_device_codes)) %>% 
         left_join(
             mutate(db$devices, JOINCHECK=TRUE),
             by=c('organization_code', 'deployment_device_codes' = 'device_code')
