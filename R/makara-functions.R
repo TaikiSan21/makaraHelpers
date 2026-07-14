@@ -1315,7 +1315,9 @@ checkRowDiffs <- function(x, y) {
         }
         valX <- x[[c]]
         valY <- y[[c]]
-        if(is.character(valY) && valY == '') {
+        if(!is.na(valY) &&
+           is.character(valY) && 
+           valY == '') {
             valY <- NA_character_
         }
         if(is.na(valX) && is.na(valY)) {
