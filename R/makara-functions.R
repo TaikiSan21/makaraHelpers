@@ -1470,3 +1470,34 @@ captureWarnings <- function(expr, deployment, table, type, name) {
     x$warnings <- warns
     x
 }
+
+fillFromOther <- function(x, y, cols, by, onlyFillNA=FALSE, fillWithNA=FALSE) {
+    multiMatch <- numeric(0)
+    for(i in seq_len(nrow(x))) {
+        matchY <- y[[by]] == x[[by]][i]
+        if(!any(matchY)) {
+            next
+        }
+        if(sum(matchY) > 1) {
+            multiMatch <- c(multiMatch, i)
+            next
+        }
+        thisMatch <- y[matchY, ]
+        for(c in cols) {
+            if(isTRUE(onlyFillNA) &&
+               !is.na(x[[c]][i])) {
+                next
+            }
+            thisVal <- thisMatch[[c]]
+            if(isFALSE(fillWithNA)  && is.na(thisVal)) {
+                next
+            }
+            x[[c]][i] <- thisVal
+        }
+    }
+    if(length(multiMatch) > 0) {
+        warning(length(multiMatch), ' rows in x matched more than one ',
+                'row of y (', printN(multiMatch), ')')
+    }
+    x
+}
