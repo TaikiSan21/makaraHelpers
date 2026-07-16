@@ -1320,7 +1320,8 @@ checkRowDiffs <- function(x, y) {
            valY == '') {
             valY <- NA_character_
         }
-        if(is.na(valX) && is.na(valY)) {
+        if((is.na(valX) || (is.character(valX) && valX == ''))
+           && is.na(valY)) {
             next
         }
         if(grepl('_json', c)) {
