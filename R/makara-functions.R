@@ -1471,8 +1471,9 @@ captureWarnings <- function(expr, deployment, table, type, name) {
     x
 }
 
-fillFromOther <- function(x, y, cols, by, onlyFillNA=FALSE, fillWithNA=FALSE) {
+fillFromOther <- function(x, y, cols, by, onlyFillNA=FALSE, fillWithNA=FALSE, verbose=FALSE) {
     multiMatch <- numeric(0)
+    nFilled <- 0
     for(i in seq_len(nrow(x))) {
         matchY <- y[[by]] == x[[by]][i]
         if(!any(matchY)) {
@@ -1493,11 +1494,15 @@ fillFromOther <- function(x, y, cols, by, onlyFillNA=FALSE, fillWithNA=FALSE) {
                 next
             }
             x[[c]][i] <- thisVal
+            nFilled <- nFilled + 1
         }
     }
     if(length(multiMatch) > 0) {
         warning(length(multiMatch), ' rows in x matched more than one ',
                 'row of y (', printN(multiMatch), ')')
+    }
+    if(isTRUE(verbose)) {
+        cat('Changed', nFilled, 'values')
     }
     x
 }
