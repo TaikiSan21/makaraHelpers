@@ -658,7 +658,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
         #             matchOrg <- db$devices$organization_code[inOther]
         #             newCode <- paste0(matchOrg, ':', missCodes[c])
         #             newOneMatch <- c(newOneMatch, newCode)
-        #             if(isTRUE(updateDeviceOrgs)) {
+        #             if(isTRUE(updateOrgs)) {
         #                 x$recordings$recording_device_codes[missRows[c]] <- 
         #                     gsub(paste0('^(', missCodes[c], ')(,|$)'), 
         #                          paste0(matchOrg, ':', '\\1\\2'), 
@@ -678,7 +678,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
         #                                            recDevCheck$recording_device_codes[missRecDev][missNoMatch],
         #                                            ' is not present in database.devices'))
         #     }
-        #     if(any(missOneMatch) && isTRUE(updateDeviceOrgs)) {
+        #     if(any(missOneMatch) && isTRUE(updateOrgs)) {
         #         warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev][missOneMatch],
         #                             row=recDevCheck$ORIGROW[missRecDev][missOneMatch],
         #                             table='recordings',
@@ -687,9 +687,9 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
         #                                            recDevCheck$recording_device_codes[missRecDev][missOneMatch],
         #                                            ' is not present for ', missOrgs[missOneMatch],
         #                                            ', but matched exactly 1 other org. Replaced with ', 
-        #                                            newOneMatch, '. Set updateDeviceOrgs=FALSE to skip replacement.'))
+        #                                            newOneMatch, '. Set updateOrgs=FALSE to skip replacement.'))
         #     }
-        #     if(any(missOneMatch) && isFALSE(updateDeviceOrgs)) {
+        #     if(any(missOneMatch) && isFALSE(updateOrgs)) {
         #         warns <- addWarning(warns, deployment=recDevCheck$deployment_code[missRecDev][missOneMatch],
         #                             row=recDevCheck$ORIGROW[missRecDev][missOneMatch],
         #                             table='recordings',
@@ -697,7 +697,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
         #                             message=paste0('recording_device_code ', 
         #                                            recDevCheck$recording_device_codes[missRecDev][missOneMatch],
         #                                            ' is not present for ', missOrgs[missOneMatch],
-        #                                            ', but matched exactly 1 other org. Set updateDeviceOrgs=TRUE to',
+        #                                            ', but matched exactly 1 other org. Set updateOrgs=TRUE to',
         #                                            ' replace with matched device.'))
         #     }
         #     if(any(missMultiMatch)) {
@@ -745,7 +745,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
                     matchOrg <- db$devices$organization_code[inOther]
                     newCode <- paste0(matchOrg, ':', missCodes[c])
                     newOneMatch <- c(newOneMatch, newCode)
-                    if(isTRUE(updateDeviceOrgs)) {
+                    if(isTRUE(updateOrgs)) {
                         x$deployments$deployment_device_codes[missRows[c]] <- 
                             gsub(paste0('^(', missCodes[c], ')(,|$)'), 
                                  paste0(matchOrg, ':', '\\1\\2'), 
@@ -765,7 +765,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
                                                    devCheck$deployment_device_codes[missDev][missNoMatch],
                                                    ' is not present in database.devices'))
             }
-            if(any(missOneMatch) && isTRUE(updateDeviceOrgs)) {
+            if(any(missOneMatch) && isTRUE(updateOrgs)) {
                 warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev][missOneMatch],
                                     row=devCheck$ORIGROW[missDev][missOneMatch],
                                     table='deployments',
@@ -774,9 +774,9 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
                                                    devCheck$deployment_device_codes[missDev][missOneMatch],
                                                    ' is not present for ', missOrgs[missOneMatch],
                                                    ', but matched exactly 1 other org. Replaced with ', 
-                                                   newOneMatch, '. Set updateDeviceOrgs=FALSE to skip replacement.'))
+                                                   newOneMatch, '. Set updateOrgs=FALSE to skip replacement.'))
             }
-            if(any(missOneMatch) && isFALSE(updateDeviceOrgs)) {
+            if(any(missOneMatch) && isFALSE(updateOrgs)) {
                 warns <- addWarning(warns, deployment=devCheck$deployment_code[missDev][missOneMatch],
                                     row=devCheck$ORIGROW[missDev][missOneMatch],
                                     table='deployments',
@@ -784,7 +784,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
                                     message=paste0('deployment_device_codes ', 
                                                    devCheck$deployment_device_codes[missDev][missOneMatch],
                                                    ' is not present for ', missOrgs[missOneMatch],
-                                                   ', but matched exactly 1 other org. Set updateDeviceOrgs=TRUE to',
+                                                   ', but matched exactly 1 other org. Set updateOrgs=TRUE to',
                                                    ' replace with matched device.'))
             }
             if(any(missMultiMatch)) {
@@ -916,7 +916,7 @@ checkWithOrgs <- function(x, y, by, table='', update=TRUE) {
                                                checkDf[[xCol]][missDev][missOneMatch],
                                                ' is not present for ', missOrgs[missOneMatch],
                                                ', but matched exactly 1 other org. Replaced with ', 
-                                               newOneMatch, '. Set updateDeviceOrgs=FALSE to skip replacement.'))
+                                               newOneMatch, '. Set updateOrgs=FALSE to skip replacement.'))
         }
         if(any(missOneMatch) && isFALSE(update)) {
             warns <- addWarning(warns, 
@@ -927,7 +927,7 @@ checkWithOrgs <- function(x, y, by, table='', update=TRUE) {
                                 message=paste0(xCol, ' ', 
                                                checkDf[[xCol]][missDev][missOneMatch],
                                                ' is not present for ', missOrgs[missOneMatch],
-                                               ', but matched exactly 1 other org. Set updateDeviceOrgs=TRUE to',
+                                               ', but matched exactly 1 other org. Set updateOrgs=TRUE to',
                                                ' replace with matched device.'))
         }
         if(any(missMultiMatch)) {
