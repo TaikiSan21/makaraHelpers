@@ -1434,3 +1434,38 @@ fillFromOther <- function(x, y, cols, by, onlyFillNA=FALSE, fillWithNA=FALSE, ve
     }
     x
 }
+
+addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NULL) {
+    if(length(x) > 1) {
+        if(length(value) == 1) {
+            value <- rep(value, length(x))
+        }
+        if(length(value) != length(x)) {
+            stop('Mismatched lengths for JSON fields')
+        }
+        for(i in seq_along(x)) {
+            val <- value[i]
+            if(is.list(val)) {
+                val <- val[[1]]
+            }
+            x[i] <- addJSONField(x[i], name, val, toNumeric=toNumeric, split=split)
+        }
+        return(x)
+    }
+    if(isTRUE(skipNA) && is.na(value)) {
+        return(x)
+    }
+    if(is.na(x)) {
+        x <- list()
+    } else {
+        x <- fromJSON(x)
+    }
+    if(!is.null(split)) {
+        value <- strsplit(value, split=split)[[1]]
+    }
+    if(isTRUE(toNumeric)) {
+        value <- as.numeric(value)
+    }
+    x[[name]] <- value
+    toJSON(x)
+}
