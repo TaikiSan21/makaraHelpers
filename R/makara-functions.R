@@ -1435,7 +1435,7 @@ fillFromOther <- function(x, y, cols, by, onlyFillNA=FALSE, fillWithNA=FALSE, ve
     x
 }
 
-addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NULL) {
+addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NULL, forceArray=FALSE) {
     if(length(x) > 1) {
         if(length(value) == 1) {
             value <- rep(value, length(x))
@@ -1448,7 +1448,7 @@ addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NU
             if(is.list(val)) {
                 val <- val[[1]]
             }
-            x[i] <- addJSONField(x[i], name, val, toNumeric=toNumeric, split=split)
+            x[i] <- addJSONField(x[i], name, val, toNumeric=toNumeric, split=split, forceArray = forceArray)
         }
         return(x)
     }
@@ -1465,6 +1465,10 @@ addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NU
     }
     if(isTRUE(toNumeric)) {
         value <- as.numeric(value)
+    }
+    if(isTRUE(forceArray) && 
+       length(value) == 1 && !is.list(value)) {
+        value <- list(value)
     }
     x[[name]] <- value
     toJSON(x)
