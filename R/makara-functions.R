@@ -1446,7 +1446,7 @@ addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NU
         for(i in seq_along(x)) {
             val <- value[i]
             if(is.list(val)) {
-                val <- val[[1]]
+                # val <- val[[1]] # this was previously used by split() on a column
             }
             x[i] <- addJSONField(x[i], name, val, toNumeric=toNumeric, split=split, forceArray = forceArray)
         }
@@ -1458,7 +1458,7 @@ addJSONField <- function(x, name, value, toNumeric=FALSE, skipNA=FALSE, split=NU
     if(is.na(x)) {
         x <- list()
     } else {
-        x <- fromJSON(x)
+        x <- fromJSON(x, simplify=FALSE)
     }
     if(!is.null(split)) {
         value <- strsplit(value, split=split)[[1]]
