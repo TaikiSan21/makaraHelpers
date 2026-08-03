@@ -495,7 +495,7 @@ checkMakTemplate <- function(x, templates=NULL, ncei=FALSE, dropEmpty=FALSE, dro
                                     table=n,
                                     type='JSON Field NA',
                                     message=paste0('JSON field(s) ',
-                                                   printN(naFields[naJson], Inf),
+                                                   naFields[naJson],
                                                    ' in column ', j, ' are NA')
                 )
                 
