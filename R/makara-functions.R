@@ -841,6 +841,7 @@ checkDetectionData <- function(x, db) {
             select(x$deployments, deployment_code, organization_code)
         )
     }
+    warns <- vector('list', length=0)
     # check ana dep_code is in metadata, drop detections if not
     # probably also check ana recording code? later- less important
     dets <- distinct(select(x$detections,
@@ -866,7 +867,6 @@ checkDetectionData <- function(x, db) {
         x$detections <- filter(x$detections, !deployment_code %in% dropDep)
     }
     
-    warns <- vector('list', length=0)
     # want to check det codes are in ana
     anaCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code'), 
                             fixOrgs = TRUE, verbose=F)
