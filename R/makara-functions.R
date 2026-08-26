@@ -842,7 +842,7 @@ checkDetectionData <- function(x, db) {
         )
     }
     # check ana dep_code is in metadata, drop detections if not
-    # probably also check ana recording code? later. less important
+    # probably also check ana recording code? later- less important
     dets <- distinct(select(x$detections,
                             deployment_code,
                             analysis_code,
