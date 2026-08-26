@@ -830,12 +830,19 @@ checkAlreadyDb <- function(x, db, verbose=TRUE) {
     x
 }
 
-checkDetectionData <- function(x) {
+checkDetectionData <- function(x, db) {
     # only if dets and ana are in
     if(!all(c('detections', 'analyses') %in% names(x))) {
         return(x)
     }
-    # want to check det codes are in ana
+    if('deployments' %in% names(x)) {
+        db$deployments <- bind_rows(
+            db$deployments,
+            select(x$deployments, deployment_code, organization_code)
+        )
+    }
+    # check ana dep_code is in metadata, drop detections if not
+    # probably also check ana recording code? later. less important
     dets <- distinct(select(x$detections,
                             deployment_code,
                             analysis_code,
@@ -844,12 +851,25 @@ checkDetectionData <- function(x) {
                            deployment_code, 
                            analysis_code,
                            analysis_sound_source_codes))
-    orgFix <- fixOrgPrefix(ana, columns=c('deployment_code', 'analysis_code'))
-    for(c in names(orgFix)) {
-        ana[[c]] <- orgFix[[c]]$new
+    anaMeta <- doJoinCheck(ana, db$deployments, by=c('deployment_code'), verbose=FALSE,
+                           fixOrgs=TRUE)
+    if(any(anaMeta$new)) {
+        dropDep <- anaMeta$deployment_code[anaMeta$new]
+        warns <- addWarning(warns,
+                            deployment=dropDep,
+                            row=which(anaMeta$new),
+                            type='deployment_code is not in db',
+                            table='analyses',
+                            message=paste0("deployment_code '", dropDep,
+                                           "' is not in Makara, metadata must be uploaded before detections")
+        )
+        x$detections <- filter(x$detections, !deployment_code %in% dropDep)
     }
+    
     warns <- vector('list', length=0)
-    anaCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code'), verbose=F)
+    # want to check det codes are in ana
+    anaCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code'), 
+                            fixOrgs = TRUE, verbose=F)
     if(any(anaCheck$new)) {
         warns <- addWarning(warns, 
                             deployment=anaCheck$deployment_code[anaCheck$new],
@@ -864,7 +884,8 @@ checkDetectionData <- function(x) {
     ana <- ana  %>% 
         mutate(detection_sound_source_code = strsplit(analysis_sound_source_codes, ',')) %>% 
         unnest(detection_sound_source_code)
-    speciesCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code', 'detection_sound_source_code'), verbose=F)
+    speciesCheck <- doJoinCheck(dets, ana, by=c('deployment_code', 'analysis_code', 'detection_sound_source_code'), 
+                                fixOrgs=TRUE, verbose=F)
     if(any(speciesCheck$new)) {
         warns <- addWarning(warns, 
                             deployment=speciesCheck$deployment_code[speciesCheck$new],
