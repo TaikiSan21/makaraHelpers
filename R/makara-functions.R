@@ -775,7 +775,8 @@ joinRequirements <- list(
     'recording_intervals' = c('deployment_code', 'recording_code', 'recording_interval_start_datetime'),
     'analyses' = c('deployment_organization_code', 'deployment_code', 'analysis_code'),
     'tracks' = c('organization_code', 'deployment_code', 'track_code'),
-    'sensor_datasets' = c('organization_code', 'deployment_code', 'sensor_dataset_code')
+    'sensor_datasets' = c('organization_code', 'deployment_code', 'sensor_dataset_code'),
+    'devices' = c('organization_code', 'device_code')
 )
 if(packageVersion('makaraValidatr') >= '0.5.0') {
     joinRequirements$analyses <- c('organization_code', 'deployment_code', 'analysis_code', 'deployment_organization_code')
