@@ -34,7 +34,7 @@ myRenamer <- function(x, map) {
 
 # combines a bunch of columns into one, optionally adding a prefix
 # to each column entry if it is not NA
-combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=TRUE) {
+combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=TRUE, remove=TRUE) {
     missing <- !columns %in% names(x)
     if(all(missing)) {
         warning('None of the column(s) ',
@@ -59,7 +59,7 @@ combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=
                                        paste0(prefix[i], x[[columns[i]]]))
         }
     }
-    x <- unite(x, !!into, any_of(c(into, columns)), sep=sep, na.rm=TRUE)
+    x <- unite(x, !!into, any_of(c(into, columns)), sep=sep, na.rm=TRUE, remove=remove)
     x
 }
 
