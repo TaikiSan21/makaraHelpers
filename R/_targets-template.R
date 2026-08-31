@@ -73,7 +73,9 @@ list(
     }),
     # final checks ----
     tar_target(db_check, {
-        out <- checkAlreadyDb(combined_data, db)
+        out <- combined_data
+        out <- checkDetectionData(out, db)
+        out <- checkAlreadyDb(out, db)
         out <- dropAlreadyDb(out, drop=!params$export_already_in_db)
         out <- checkMakTemplate(out,
                                 templates=templates,
