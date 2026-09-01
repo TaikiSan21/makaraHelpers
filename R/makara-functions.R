@@ -85,10 +85,11 @@ psxTo8601 <- function(x) {
         warning('Must be POSIXct or character')
         return(x)
     }
-    if(tz(x) != 'UTC') {
-        warning('Non-UTC timezone not yet supported')
-    }
-    format(x, format='%Y-%m-%dT%H:%M:%SZ')
+    # if(tz(x) != 'UTC') {
+    #     warning('Non-UTC timezone not yet supported')
+    # }
+    # format(x, format='%Y-%m-%dT%H:%M:%SZ')
+    format_ISO8601(x, usetz='Z')
 }
 
 # create a POSIXct or full datetime character from separate date
@@ -1402,7 +1403,7 @@ squishList <- function(myList, unique=FALSE) {
             names(thisNameData) <- gsub(paste0(n, '\\.'), '', names(thisNameData))
             squishList(thisNameData, unique)
             # } else if(all(thisClasses=='data.frame')) {
-        } else if(all(sapply(thisNameData, function(x) inherits(x, 'data.frame')))) {
+        } else if(all(sapply(thisNameData, function(x) (is.null(x) || inherits(x, 'data.frame'))))) {
             if(isTRUE(unique)) {
                 distinct(bind_rows(thisNameData))
             } else {
