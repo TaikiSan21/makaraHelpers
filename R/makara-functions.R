@@ -67,8 +67,12 @@ combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=
     }
     x <- unite(x, !!into, any_of(c(into, columns)), sep=sep, na.rm=TRUE, remove=remove)
     if(isFALSE(remove)) {
-        x[[columns[i]]] <- x[[TEMP_COLS[i]]]
-        x[[TEMP_COLS[i]]] <- NULL
+        for(i in seq_along(columns)) {
+            if(columns[i] != into) {
+                x[[columns[i]]] <- x[[TEMP_COLS[i]]]
+            }
+            x[[TEMP_COLS[i]]] <- NULL
+        }
     }
     x
 }
@@ -630,7 +634,7 @@ checkDbValues <- function(x, db=NULL, updateOrgs=TRUE) {
         )
         db$sites <- distinct(select(db$sites, organization_code, site_code))
     }
-
+    
     warns <- vector('list', length=0)
     # check org codes exist
     allOrgs <- unique(unlist(lapply(x, function(df) {
