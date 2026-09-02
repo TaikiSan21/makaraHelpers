@@ -54,12 +54,22 @@ combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=
     }
     if(!is.null(prefix)) {
         prefix <- prefix[!missing]
+        if(isFALSE(remove)) {
+            TEMP_COLS <- paste0(columns, '_TEMP')
+        }
         for(i in seq_along(columns)) {
+            if(isFALSE(remove)) {
+                x[[TEMP_COLS[i]]] <- x[[columns[i]]]
+            }
             x[[columns[i]]] <- if_else(is.na(x[[columns[i]]]) | x[[columns[i]]] == '', NA_character_, 
                                        paste0(prefix[i], x[[columns[i]]]))
         }
     }
     x <- unite(x, !!into, any_of(c(into, columns)), sep=sep, na.rm=TRUE, remove=remove)
+    if(isFALSE(remove)) {
+        x[[columns[i]]] <- x[[TEMP_COLS[i]]]
+        x[[TEMP_COLS[i]]] <- NULL
+    }
     x
 }
 
