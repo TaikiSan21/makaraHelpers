@@ -79,11 +79,12 @@ combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=
 
 # pretty printing helper to print number of items in a list
 # n is a cutoff of max to show at once
-printN <- function(x, n=6, collapse=', ') {
+printN <- function(x, n=6, collapse=', ', maxChar=200L) {
     nItems <- length(x)
     if(nItems == 0) {
         return('')
     }
+    x <- substr(x, 1, maxChar)
     if(nItems > n) {
         x <- c(x[1:n], paste0('... (', nItems-n, ' more not shown)'))
     }
