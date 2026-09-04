@@ -285,6 +285,7 @@ checkMakTemplate <- function(x, templates=NULL, ncei=FALSE, dropEmpty=FALSE, dro
             }
             if(m == 'recording_timezone') {
                 badTz <- !grepl('^UTC[+-]?[0-9:]{0,5}$', thisData[[m]])
+                badTz <- badTz & !is.na(thisData[[m]])
                 if(any(badTz)) {
                     warns <- addWarning(warns, 
                                         deployment=thisData$deployment_code[badTz],
