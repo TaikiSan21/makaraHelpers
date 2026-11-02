@@ -37,9 +37,14 @@ myRenamer <- function(x, map) {
 combineColumns <- function(x, into, columns, prefix=NULL, sep='; ', warnMissing=TRUE, remove=TRUE) {
     missing <- !columns %in% names(x)
     if(all(missing)) {
-        warning('None of the column(s) ',
-                printN(columns),
-                ' were present in data, cannot combine,')
+        if(!into %in% names(x)) {
+            x[[into]] <- NA_character_
+        }
+        if(isTRUE(warnMissing)) {
+            warning('None of the column(s) ',
+                    printN(columns),
+                    ' were present in data, cannot combine')
+        }
         return(x)
     }
     if(sum(missing) > 0 && isTRUE(warnMissing)) {
