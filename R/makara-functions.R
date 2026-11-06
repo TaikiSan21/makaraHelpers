@@ -932,7 +932,8 @@ checkDetectionData <- function(x, db) {
                detection_end_datetime = ymd_hms(detection_end_datetime)) %>% 
         group_by(deployment_code, analysis_code) %>% 
         summarise(det_start = min(detection_start_datetime, na.rm=TRUE),
-                  det_end = max(detection_end_datetime, na.rm=TRUE))
+                  det_end = max(detection_end_datetime, na.rm=TRUE),
+                  .groups='drop_last')
     anaTime <- left_join(anaTime,
                          detTime,
                          by=c('deployment_code', 'analysis_code')) %>% 
